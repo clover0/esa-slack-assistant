@@ -10,6 +10,7 @@
     "watch": "nodemon --exec ts-node src/app.ts",
     "lint": "biome lint ./src",
     "lint-fix": "biome lint fix --write ./src",
+    "check-fix": "biome check --write ./src",
     "test": "jest"
   },
   "author": "",
@@ -18,10 +19,12 @@
     "@google/genai": "1.20.0",
     "@slack/bolt": "4.4.0",
     "axios": "1.12.2",
-    "dotenv": "17.2.1"
+    "dotenv": "17.2.1",
+    "express": "5.1.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.2.2",
+    "@biomejs/biome": "^2.2.4",
+    "@types/express": "^5.0.3",
     "@types/node": "^24.5.2",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",

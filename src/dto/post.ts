@@ -1,0 +1,9 @@
+export type Post = {
+	name: string;
+	full_name: string;
+	body_md: string;
+	category: string;
+	created_at: string;
+	updated_at: string;
+	url: string;
+};
