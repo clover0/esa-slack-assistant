@@ -13,6 +13,4 @@ COPY src src
 
 RUN npm run build
 
-EXPOSE 8080
-
 CMD ["dist/app.js"]
