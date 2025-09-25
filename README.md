@@ -17,7 +17,7 @@ esa Slack Assistantは、ナレッジシェアリングプラットフォーム�
 
 
 ## アプリのデプロイ
-Websocketモードで動作するため常時稼働するタイプなら問題ありません。
+WebSocketモードで動作するため常時稼働するタイプなら問題ありません。
 
 以下の環境変数を設定します。
 ```
@@ -34,7 +34,11 @@ GOOGLE_CLOUD_LOCATION=<us-central1>
 
 
 ### Google Cloud Run
-minimum instancesを1に設定してください。
+リビジョン スケーリングの設定でインスタンスの最小数はを1以上に設定してください。
+
+VertexAIを利用しているため、Cloud RunのリージョンはVertexAIが利用可能なリージョンにしてください。
+Cloud RunのサービスアカウントにはVertexAIを利用できるロールを付与してください。
+
 
 
 ### その他
