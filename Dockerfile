@@ -1,4 +1,4 @@
-FROM node:22.1-slim AS builder
+FROM node:22.20-trixie-slim AS builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ COPY src src
 RUN npm run build
 
 
-FROM node:22.1-slim AS runner
+FROM node:22.20-trixie-slim AS runner
 
 WORKDIR /app
 
