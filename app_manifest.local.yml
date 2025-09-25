@@ -11,7 +11,6 @@ features:
     display_name: esa_assistant_local
     always_online: true
 oauth_config:
-  redirect_urls:
   scopes:
     bot:
       - channels:history

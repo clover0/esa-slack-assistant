@@ -1,17 +1,16 @@
 # for deploy
 display_information:
-  name: esa-assistant
-  description: esa assistant
+  name: esa-assistant # Keep it as is or change it
+  description: esa assistant # Keep it as is or change it
 features:
   app_home:
     home_tab_enabled: true
     messages_tab_enabled: false
     messages_tab_read_only_enabled: true
   bot_user:
-    display_name: esa-assistant
+    display_name: esa-assistant # Keep it as is or change it
     always_online: true
 oauth_config:
-  redirect_urls:
   scopes:
     bot:
       - channels:history
