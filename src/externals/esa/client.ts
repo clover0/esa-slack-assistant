@@ -35,6 +35,8 @@ export type EsaErrorResponse = {
 	message?: string;
 };
 
+export const esaMaxPostsPerPage = 100;
+
 export class EsaClient {
 	private readonly baseUrl: string;
 	private readonly apiKey: string;
@@ -62,16 +64,26 @@ export class EsaClient {
 		});
 	}
 
-	async getCategories(params: GetCategoryParams): Promise<GetCategoryResponse> {
+	async getCategories(
+		params: GetCategoryParams,
+		option?: { excludeArchive: boolean },
+	): Promise<GetCategoryResponse> {
 		const apiPath = `/v1/teams/${this.team}/categories/paths`;
 
 		try {
 			const response = await this.client.get(apiPath, {
 				params: { ...params },
 			});
+			if (option?.excludeArchive) {
+				response.data.categories = (
+					response.data as GetCategoryResponse
+				).categories.filter((c: { path: string }) => {
+					return !!c.path && !c.path.includes("Archive");
+				});
+			}
 			return response.data;
 		} catch (err: any) {
-			console.error("Esa API error:", err.response?.data || err.message);
+			console.error("esa API error:", err.response?.data || "", err.message);
 			throw err;
 		}
 	}
@@ -81,11 +93,11 @@ export class EsaClient {
 
 		try {
 			const response = await this.client.get(apiPath, {
-				params: { ...params },
+				params: { max_per_page: esaMaxPostsPerPage, ...params },
 			});
 			return response.data;
 		} catch (err: any) {
-			console.error("Esa API error:", err.response?.data || err.message);
+			console.error("esa API error:", err.response?.data || "", err.message);
 			throw err;
 		}
 	}

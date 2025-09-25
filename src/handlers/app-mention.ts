@@ -72,9 +72,14 @@ export class AppMentionHandler {
 			text: ":hourglass_flowing_sand:...",
 		});
 
-		const categories = await this.esaClient.getCategories({});
+		const categories = await this.esaClient.getCategories(
+			{},
+			{ excludeArchive: true },
+		);
 		const targetCategories = await this.answerService.selectCategory(
-			categories.categories.filter((c) => !!c).map((c) => c.path),
+			categories.categories
+				.filter((c) => !!c)
+				.map((c) => `${c.path} ${c.posts}`),
 			event.text,
 		);
 
@@ -111,7 +116,10 @@ export class AppMentionHandler {
 			}),
 		);
 
-		const categories = await this.esaClient.getCategories({});
+		const categories = await this.esaClient.getCategories(
+			{},
+			{ excludeArchive: true },
+		);
 
 		const targetCategories = await this.answerService.selectCategory(
 			categories.categories.filter((c) => !!c).map((c) => c.path),

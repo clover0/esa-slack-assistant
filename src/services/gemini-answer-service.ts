@@ -2,6 +2,7 @@ import { GoogleGenAI, Modality } from "@google/genai";
 import type { ChatHistory } from "../dto/chat-history";
 import type { Chunk } from "../dto/chunk";
 import type { Post } from "../dto/post";
+import { esaMaxPostsPerPage } from "../externals/esa/client";
 import type { AnswerService } from "./answer-service";
 
 const selectCategoryInstruction = `あなたは **esa ドキュメント検索のアシスタント** です。
@@ -11,13 +12,13 @@ const selectCategoryInstruction = `あなたは **esa ドキュメント検索�
 1. ユーザーの質問を正確に理解する
 2. esa に存在するカテゴリの中から、関連性の高いカテゴリを最大3つまで特定する
 
-
 # 出力ルール
 
 * 出力はカテゴリ名のみ
 * 各カテゴリを改行で区切る
 * 余計なテキストや説明は出力しない
 * 出力数は1〜3個まで
+* カテゴリ一覧には、カテゴリ名とそのカテゴリに属する記事数がスペース区切りで並んでいます。記事数が${esaMaxPostsPerPage}を超えるカテゴリは除外してください。
 
 
 # 出力例
@@ -118,7 +119,8 @@ ${categories.join("\n")}
 			.map(
 				(p) => `title: ${p.name}
 url: ${p.url}
-body: ${p.body_md}`,
+body: ${p.body_md}
+updated_at: ${p.updated_at}`,
 			)
 			.join("\n===");
 		return `
