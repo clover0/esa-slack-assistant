@@ -9,7 +9,9 @@ export class EsaService {
 
 	async collectPostsByCategories(categories: string[]) {
 		const responses = await Promise.all(
-			categories.map((path) => this.esa.getPosts({ q: `on:${path}` })),
+			categories.map((path) =>
+				this.esa.getPosts({ q: `on:${path} wip:false` }),
+			),
 		);
 
 		return responses.flatMap((response) => response.posts);
