@@ -51,14 +51,15 @@ registerListeners(app, appHomeOpenedHandler, appMentionHandler);
 const httpApp = express();
 httpApp.get("/healthz", (_, res) => res.status(200).send("ok"));
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 8080;
+const host = process.env.HOSTNAME || "0.0.0.0";
 (async () => {
 	try {
 		app.logger.info({ msg: `http server starting on port ${port}` });
-		// httpApp.listen(port, async () => {
-		await app.start();
-		app.logger.info({ msg: "esa-assistant is running on websocket mode" });
-		// });
+		httpApp.listen(port as number, host, async () => {
+			await app.start();
+			app.logger.info({ msg: "esa-assistant is running on websocket mode" });
+		});
 	} catch (error) {
 		app.logger.error({ msg: "unable to start app", error: error });
 	}
