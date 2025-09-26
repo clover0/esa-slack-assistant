@@ -23,12 +23,12 @@
     "express": "5.1.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.2.4",
-    "@types/express": "^5.0.3",
-    "@types/node": "^24.5.2",
-    "nodemon": "^3.1.10",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.2"
+    "@biomejs/biome": "2.2.4",
+    "@types/express": "5.0.3",
+    "@types/node": "24.5.2",
+    "nodemon": "3.1.10",
+    "ts-node": "10.9.2",
+    "typescript": "5.9.2"
   },
   "engines": {
     "node": ">=22.0.0"

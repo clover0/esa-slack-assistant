@@ -1,4 +1,4 @@
-FROM node:22.20-trixie-slim AS builder
+FROM node:22.20-trixie-slim@sha256:c7a6d80f9d76726291228f8878cd844cb15fcbdd2a4d54591e7d2b1903efb4e1 AS builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ COPY src src
 RUN npm run build
 
 
-FROM node:22.20-trixie-slim AS runner
+FROM node:22.20-trixie-slim@sha256:c7a6d80f9d76726291228f8878cd844cb15fcbdd2a4d54591e7d2b1903efb4e1 AS runner
 
 WORKDIR /app
 
