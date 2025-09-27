@@ -3,7 +3,17 @@ import type { Chunk } from "../dto/chunk";
 import type { Post } from "../dto/post";
 
 export interface AnswerService {
-	selectCategory(categories: string[], userQuestion: string): Promise<string[]>;
+	selectCategory(
+		categories: string[],
+		userQuestion: string,
+		history?: ChatHistory[],
+	): Promise<string[]>;
+
+	generateKeywords(
+		categories: string[],
+		userQuestion: string,
+		history?: ChatHistory[],
+	): Promise<string[]>;
 
 	answerQuestion(
 		posts: Post[],

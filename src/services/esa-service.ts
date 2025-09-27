@@ -16,4 +16,14 @@ export class EsaService {
 
 		return responses.flatMap((response) => response.posts);
 	}
+
+	async searchPostsByKeywords(keywords: string[]) {
+		const query = this.buildKeywordsQuery(keywords);
+		const response = await this.esa.getPosts({ q: `${query} wip:false` });
+		return response.posts;
+	}
+
+	private buildKeywordsQuery(keywords: string[]) {
+		return keywords.map((keyword) => `"${keyword}"`).join(" OR ");
+	}
 }
