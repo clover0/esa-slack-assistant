@@ -1,4 +1,4 @@
-name: Test,Lint on Pull Request
+name: PR # Lint, Test
 
 on:
   pull_request:
