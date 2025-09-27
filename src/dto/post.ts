@@ -1,4 +1,5 @@
 export type Post = {
+	number: number;
 	name: string;
 	full_name: string;
 	body_md: string;

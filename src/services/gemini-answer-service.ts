@@ -1,12 +1,12 @@
-import { GoogleGenAI, Modality } from "@google/genai";
+import { FinishReason, GoogleGenAI, Modality } from "@google/genai";
 import type { ChatHistory } from "../dto/chat-history";
 import type { Chunk } from "../dto/chunk";
 import type { Post } from "../dto/post";
 import { esaMaxPostsPerPage } from "../externals/esa/client";
 import type { AnswerService } from "./answer-service";
 
-const selectCategoryInstruction = `あなたは **esa ドキュメント検索のアシスタント** です。
-ユーザーの質問に関連する適切なカテゴリを特定して出力してください。
+const selectCategoryInstruction = `あなたは esa ドキュメント検索のアシスタントです。
+ユーザーの質問と会話の文脈から関連する適切なカテゴリを特定して出力してください。
 
 # 手順
 1. ユーザーの質問を正確に理解する
@@ -30,11 +30,34 @@ category2/sub1/sub2
 \`\`\`
 `;
 
+const generateKeywordsInstruction = ({
+	userQuestion,
+}: {
+	userQuestion: string;
+}) => `あなたは esa ドキュメント検索のアシスタントです。
+ユーザーの質問と会話の文脈から関連する適切なキーワードを出力してください。
+
+# ユーザーの質問
+\`\`\`
+${userQuestion}
+\`\`\`
+
+# 手順
+1. 会話の文脈を把握して、ユーザーの質問を正しく理解する
+2. 記事の検索で利用するためのキーワードを8個生成する。
+
+# 出力ルール
+* 出力はキーワードのみ
+* キーワードは記号やスペースを使わずに出力する
+* 質問から類推できるキーワード、カテゴリ一覧から類推できるキーワードを使う
+* 出力はキーワードごとに1行ごとに出力する
+`;
+
 const answerQuestionInstruction = `あなたはナレッジシェアリングサービス「esa」の記事を利用してユーザーの質問に回答するAIアシスタントです。
 ユーザーの質問に関連するドキュメントを「ドキュメント一覧」から探し、根拠とともに回答してください。
 
 # 手順
-1. ユーザーの質問を正しく理解する
+1. 会話の文脈を把握して、ユーザーの質問を正しく理解する
 2. 「ドキュメント一覧」から質問に関連するドキュメントを検索する
 3. ドキュメントをもとに回答を作成する
 
@@ -44,7 +67,7 @@ const answerQuestionInstruction = `あなたはナレッジシェアリングサ
 必須制約:
 * 「ドキュメント一覧」に含まれる情報のみを使用すること
 * 一般知識や想像による補足は禁止
-* ドキュメントが見つからない場合は、必ず以下の定型文で答えて、どのような質問にすると回答を得られるか質問文を提案してください：
+* ドキュメントが見つからない場合は、必ず以下の定型文で答えて、どのような質問にすると回答を得られるか質問文を提案してください
     > 該当するドキュメントが見つかりませんでした
 
 回答の要件:
@@ -53,10 +76,12 @@ const answerQuestionInstruction = `あなたはナレッジシェアリングサ
 * 複数のドキュメントを利用する場合は、ドキュメントごとに根拠を分けて示すこと
 
 出力形式:
-出力はSlackに投稿できる形式にすること。
-丁寧で分かりやすく、ユーザーがすぐ理解できる文体で書くこと
+* 出力はSlackに投稿できる形式にすること。
+* 丁寧で分かりやすく、ユーザーがすぐ理解できる文体で書くこと
+* Slackへの返信メッセージには文字制限があるため、長い文章は避けること
+* 箇条書きの多用は避け、必要に応じて段落で説明すること
 
-出力で利用可能なマークアップ:
+出力するときに利用可能なマークアップ:
 * 太字: テキストを1つのアスタリスクで囲みます。（例: *対象のテキスト*）
 * 斜体: テキストをアンダースコアで囲みます。（例: _対象のテキスト_）
 * コード: テキストをバッククォートで囲みます。（例: \`対象のテキスト\`）
@@ -90,7 +115,12 @@ export class GeminiAnswerService implements AnswerService {
 		}
 	}
 
-	async selectCategory(categories: string[], userQuestion: string) {
+	async selectCategory(
+		categories: string[],
+		userQuestion: string,
+		history?: ChatHistory[],
+	) {
+		const contents = this.buildContents(userQuestion, history);
 		const response = await this.ai.models.generateContent({
 			model: this.model,
 			config: {
@@ -100,10 +130,10 @@ export class GeminiAnswerService implements AnswerService {
 					selectCategoryInstruction + this.buildCategorySection(categories),
 				responseModalities: [Modality.TEXT],
 			},
-			contents: userQuestion,
+			contents: contents,
 		});
 
-		return this.parseCategories(response.text || "");
+		return this.parseLines(response.text || "");
 	}
 
 	private buildCategorySection(categories: string[]) {
@@ -112,6 +142,29 @@ export class GeminiAnswerService implements AnswerService {
 # カテゴリ一覧
 ${categories.join("\n")}
 `;
+	}
+
+	async generateKeywords(
+		categories: string[],
+		userQuestion: string,
+		history?: ChatHistory[],
+	) {
+		const instruction =
+			generateKeywordsInstruction({ userQuestion }) +
+			this.buildCategorySection(categories);
+		const contents = this.buildContents(userQuestion, history);
+		const response = await this.ai.models.generateContent({
+			model: this.model,
+			config: {
+				temperature: 0,
+				maxOutputTokens: 2048,
+				systemInstruction: instruction,
+				responseModalities: [Modality.TEXT],
+			},
+			contents: contents,
+		});
+
+		return this.parseLines(response.text || "");
 	}
 
 	private buildPostsSection(posts: Post[]) {
@@ -135,19 +188,12 @@ ${documents}
 		question: string,
 		history?: ChatHistory[],
 	) {
-		const contents = history
-			? [
-					...history.flatMap((h) => [
-						{ role: h.role === "user" ? "user" : "model", text: h.text },
-					]),
-					{ text: question },
-				]
-			: [{ text: question }];
+		const contents = this.buildContents(question, history);
 		const stream = await this.ai.models.generateContentStream({
 			model: this.model,
 			config: {
 				temperature: 0,
-				maxOutputTokens: 2048, // Be careful of Slack's maximum character limit for replies.
+				maxOutputTokens: 40000, // Be careful of Slack's maximum character limit for replies.
 				systemInstruction:
 					answerQuestionInstruction + this.buildPostsSection(posts),
 				responseModalities: [Modality.TEXT],
@@ -158,6 +204,16 @@ ${documents}
 		async function* mapStream(): AsyncGenerator<Chunk> {
 			for await (const evt of stream) {
 				const text = evt.text;
+				if (evt.candidates && evt.candidates.length > 0) {
+					const event = evt.candidates[0];
+					if (event.finishReason) {
+						if (event.finishReason !== FinishReason.STOP) {
+							throw new Error(
+								`error on generating answer with finish-reason ${event.finishReason}`,
+							);
+						}
+					}
+				}
 				yield { textDelta: text };
 			}
 		}
@@ -165,10 +221,24 @@ ${documents}
 		return mapStream();
 	}
 
-	private parseCategories(text: string): string[] {
+	private parseLines(text: string): string[] {
 		return text
 			.split("\n")
 			.map((line) => line.trim())
 			.filter((line) => line.length > 0);
+	}
+
+	private buildContents(
+		question: string,
+		history?: ChatHistory[],
+	): { role?: string; text: string }[] {
+		return history
+			? [
+					...history.flatMap((h) => [
+						{ role: h.role === "user" ? "user" : "model", text: h.text },
+					]),
+					{ text: question },
+				]
+			: [{ text: question }];
 	}
 }

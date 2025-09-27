@@ -35,7 +35,7 @@ export type EsaErrorResponse = {
 	message?: string;
 };
 
-export const esaMaxPostsPerPage = 100;
+export const esaMaxPostsPerPage = 30;
 
 export class EsaClient {
 	private readonly baseUrl: string;
@@ -60,6 +60,7 @@ export class EsaClient {
 			baseURL: this.baseUrl,
 			headers: {
 				Authorization: `Bearer ${this.apiKey}`,
+				"User-Agent": "https://github.com/clover0/esa-slack-assistant",
 			},
 		});
 	}

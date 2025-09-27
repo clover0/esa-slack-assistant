@@ -12,18 +12,18 @@ import { JSONConsoleLogger } from "./util/logger";
 
 dotenv.config();
 
+const logLevel = (process.env.LOG_LEVEL ?? "info") as LogLevel;
 const app = new App({
 	token: process.env.SLACK_BOT_TOKEN,
 	signingSecret: process.env.SLACK_SIGNING_SECRET,
 	socketMode: true,
 	appToken: process.env.SLACK_APP_TOKEN,
-	logLevel: (process.env.LOG_LEVEL ?? "info") as LogLevel,
 });
 
 if (process.env.LOG_FORMAT === "json") {
 	app.logger = new JSONConsoleLogger();
 }
-
+app.logger.setLevel(logLevel);
 app.logger.setName("esa-slack-assistant");
 
 const esaClient = new EsaClient({
@@ -48,7 +48,7 @@ const appMentionHandler = new AppMentionHandler(
 
 registerListeners(app, appHomeOpenedHandler, appMentionHandler);
 
-// health check endpoint for Google Cloud Run prover
+// health check endpoint for Google Cloud Run or other container platforms
 const httpApp = express();
 httpApp.get("/healthz", (_, res) => res.status(200).send("ok"));
 
@@ -57,6 +57,7 @@ const host = process.env.HOSTNAME || "0.0.0.0";
 (async () => {
 	try {
 		app.logger.info({ msg: `http server starting on port ${port}` });
+		app.logger.debug("debug mode on");
 		httpApp.listen(port as number, host, async () => {
 			app.use(handleLogger);
 			await app.start();

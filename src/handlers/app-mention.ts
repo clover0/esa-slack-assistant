@@ -1,8 +1,10 @@
 import type { AllMiddlewareArgs, SlackEventMiddlewareArgs } from "@slack/bolt";
 import type { ChatHistory } from "../dto/chat-history";
+import type { Post } from "../dto/post";
 import type { EsaClient } from "../externals/esa/client";
 import type { AnswerService } from "../services/answer-service";
 import type { EsaService } from "../services/esa-service";
+import { merge } from "../util/array";
 
 type AppMention = AllMiddlewareArgs & SlackEventMiddlewareArgs<"app_mention">;
 
@@ -43,16 +45,14 @@ export class AppMentionHandler {
 					event,
 					logger,
 				} as AppMention);
-
-				return;
+			} else {
+				await this.respondToNewThread({
+					context,
+					client,
+					event,
+					logger,
+				} as AppMention);
 			}
-
-			await this.respondToNewThread({
-				context,
-				client,
-				event,
-				logger,
-			} as AppMention);
 		} catch (err: any) {
 			await client.chat.postMessage({
 				channel: event.channel,
@@ -65,27 +65,19 @@ export class AppMentionHandler {
 		logger.info({ msg: "end handle" });
 	}
 
-	private async respondToNewThread({ client, event }: AppMention) {
+	private async respondToNewThread({ client, event, logger }: AppMention) {
 		const first = await client.chat.postMessage({
 			channel: event.channel,
 			thread_ts: event.ts,
 			text: ":hourglass_flowing_sand:...",
 		});
 
-		const categories = await this.esaClient.getCategories(
-			{},
-			{ excludeArchive: true },
-		);
-		const targetCategories = await this.answerService.selectCategory(
-			categories.categories
-				.filter((c) => !!c)
-				.map((c) => `${c.path} ${c.posts}`),
+		const mergedPosts = await this.buildMergedPosts(event.text, logger);
+
+		const response = await this.answerService.answerQuestion(
+			mergedPosts,
 			event.text,
 		);
-
-		const posts =
-			await this.esaService.collectPostsByCategories(targetCategories);
-		const response = await this.answerService.answerQuestion(posts, event.text);
 		let returnText = "";
 		for await (const message of response) {
 			returnText += message.textDelta;
@@ -97,7 +89,7 @@ export class AppMentionHandler {
 		}
 	}
 
-	private async respondInThread({ client, event }: AppMention) {
+	private async respondInThread({ client, event, logger }: AppMention) {
 		const msg = await client.chat.postMessage({
 			channel: event.channel,
 			thread_ts: event.thread_ts,
@@ -116,21 +108,14 @@ export class AppMentionHandler {
 			}),
 		);
 
-		const categories = await this.esaClient.getCategories(
-			{},
-			{ excludeArchive: true },
-		);
-
-		const targetCategories = await this.answerService.selectCategory(
-			categories.categories.filter((c) => !!c).map((c) => c.path),
+		const mergedPosts = await this.buildMergedPosts(
 			event.text,
+			logger,
+			replyTexts,
 		);
-
-		const posts =
-			await this.esaService.collectPostsByCategories(targetCategories);
 
 		const response = await this.answerService.answerQuestion(
-			posts,
+			mergedPosts,
 			event.text,
 			replyTexts,
 		);
@@ -143,5 +128,44 @@ export class AppMentionHandler {
 				markdown_text: returnText,
 			});
 		}
+	}
+
+	private async buildMergedPosts(
+		text: string,
+		logger: any,
+		history?: ChatHistory[],
+	): Promise<Post[]> {
+		const { categories } = await this.esaClient.getCategories(
+			{},
+			{ excludeArchive: true },
+		);
+
+		const categoryWithCounts = categories
+			.filter((c) => !!c)
+			.map((c) => `${c.path} ${c.posts}`);
+		const categoryPathsOnly = categories.map((c) => c.path);
+		const [targetCategories, searchKeywords] = await Promise.all([
+			this.answerService.selectCategory(categoryWithCounts, text, history),
+			this.answerService.generateKeywords(categoryPathsOnly, text, history),
+		]);
+
+		logger.debug({
+			msg: "selected categories",
+			categories: targetCategories.join(","),
+		});
+		logger.debug({
+			msg: "generated keywords",
+			keywords: searchKeywords.join(","),
+		});
+
+		const [collectedPosts, searchedPosts] = await Promise.all([
+			this.esaService.collectPostsByCategories(targetCategories),
+			this.esaService.searchPostsByKeywords(searchKeywords),
+		]);
+
+		const mergedPosts = merge(collectedPosts, searchedPosts, (x) => x.number);
+		logger.info({ msg: "searched posts", length: mergedPosts.length });
+
+		return mergedPosts;
 	}
 }
