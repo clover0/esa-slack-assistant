@@ -5,6 +5,7 @@ import { EsaClient } from "./externals/esa/client";
 import { AppHomeOpenedHandler } from "./handlers/app-home-opended";
 import { AppMentionHandler } from "./handlers/app-mention";
 import registerListeners from "./listeners";
+import { handleLogger } from "./middleware";
 import { EsaService } from "./services/esa-service";
 import { GeminiAnswerService } from "./services/gemini-answer-service";
 import { JSONConsoleLogger } from "./util/logger";
@@ -57,6 +58,7 @@ const host = process.env.HOSTNAME || "0.0.0.0";
 	try {
 		app.logger.info({ msg: `http server starting on port ${port}` });
 		httpApp.listen(port as number, host, async () => {
+			app.use(handleLogger);
 			await app.start();
 			app.logger.info({ msg: "esa-assistant is running on websocket mode" });
 		});
