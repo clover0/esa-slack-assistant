@@ -58,6 +58,7 @@ LOG_FORMAT=
 VertexAI を利用しているため、Cloud Run のリージョンは VertexAI が利用可能なリージョンにしてください。
 Cloud Run のサービスアカウントには VertexAI を利用できるロールを付与してください。
 
+コンテナイメージは [esa-slack-assistant - GitHub Packages](https://github.com/clover0/esa-slack-assistant/pkgs/container/esa-slack-assistant) を利用できます。
 
 
 ### Google Cloud 以外の環境
