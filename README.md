@@ -32,14 +32,14 @@ WebSocket モードで動作するため常時稼働するタイプなら問題�
 
 以下の必須環境変数を設定します。
 ```
-SLACK_BOT_TOKEN= <OAuth & Permissions > OAuth Tokens>
-SLACK_APP_TOKEN= <Basic Information > App-Level Tokens > Generate an app-level token. Scope: "connections:write">
-SLACK_SIGNING_SECRET=<Basic Infomation > Signing Secret>
+SLACK_BOT_TOKEN= OAuth & Permissions > OAuth Tokens
+SLACK_APP_TOKEN= Basic Information > App-Level Tokens > Generate an app-level token. Scope: "connections:write"
+SLACK_SIGNING_SECRET= Basic Infomation > Signing Secret
 
-ESA_API_KEY=<your_esa_api_key>
-ESA_TEAM_NAME=<your_team_name>
+ESA_API_KEY= your esa API Key
+ESA_TEAM_NAME= your team name
 
-GOOGLE_CLOUD_PROJECT_ID=<project-id>
+GOOGLE_CLOUD_PROJECT_ID= project id
 ```
 
 その他の設定（以下はデフォルト値）
