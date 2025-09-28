@@ -42,13 +42,15 @@ ESA_TEAM_NAME=<your_team_name>
 GOOGLE_CLOUD_PROJECT_ID=<project-id>
 ```
 
-その他の設定
+その他の設定（以下はデフォルト値）
 ```
-# デフォルト値
 GOOGLE_CLOUD_LOCATION=us-central1
 GOOGLE_GEMINI_MODEL=gemini-2.5-flash
 
+# error, warn, info, debug
 LOG_LEVEL=info
+
+# json or ""
 LOG_FORMAT=
 ```
 
