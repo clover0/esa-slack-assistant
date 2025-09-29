@@ -202,8 +202,10 @@ ${documents}
 		});
 
 		async function* mapStream(): AsyncGenerator<Chunk> {
+			let totalTokenCount: number | undefined;
 			for await (const evt of stream) {
 				const text = evt.text;
+				totalTokenCount = evt.usageMetadata?.totalTokenCount;
 				if (evt.candidates && evt.candidates.length > 0) {
 					const event = evt.candidates[0];
 					if (event.finishReason) {
@@ -214,8 +216,11 @@ ${documents}
 						}
 					}
 				}
-				yield { textDelta: text };
+				if (text) {
+					yield { textDelta: text };
+				}
 			}
+			yield { totalTokenCount };
 		}
 
 		return mapStream();
