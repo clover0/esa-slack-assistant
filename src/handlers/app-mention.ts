@@ -37,21 +37,24 @@ export class AppMentionHandler {
 			return;
 		}
 
+		let totalTokenCount: number | undefined;
 		try {
 			if (event.thread_ts) {
-				await this.respondInThread({
+				const resp = await this.respondInThread({
 					context,
 					client,
 					event,
 					logger,
 				} as AppMention);
+				totalTokenCount = resp.totalTokenCount;
 			} else {
-				await this.respondToNewThread({
+				const resp = await this.respondToNewThread({
 					context,
 					client,
 					event,
 					logger,
 				} as AppMention);
+				totalTokenCount = resp.totalTokenCount;
 			}
 		} catch (err: any) {
 			await client.chat.postMessage({
@@ -60,9 +63,9 @@ export class AppMentionHandler {
 				text: `エラーが発生しました。\n${err}`,
 			});
 			logger.error(err);
+		} finally {
+			logger.info({ msg: "end handle", totalTokenCount });
 		}
-
-		logger.info({ msg: "end handle" });
 	}
 
 	private async respondToNewThread({ client, event, logger }: AppMention) {
@@ -78,6 +81,7 @@ export class AppMentionHandler {
 			mergedPosts,
 			event.text,
 		);
+		let totalTokenCount: number | undefined;
 		let returnText = "";
 		for await (const message of response) {
 			returnText += message.textDelta;
@@ -86,7 +90,10 @@ export class AppMentionHandler {
 				ts: first.message?.ts || "",
 				markdown_text: returnText,
 			});
+			totalTokenCount = message.totalTokenCount;
 		}
+
+		return { totalTokenCount };
 	}
 
 	private async respondInThread({ client, event, logger }: AppMention) {
@@ -119,7 +126,10 @@ export class AppMentionHandler {
 			event.text,
 			replyTexts,
 		);
+
+		let totalTokenCount: number | undefined;
 		let returnText = "";
+
 		for await (const message of response) {
 			returnText += message.textDelta;
 			await client.chat.update({
@@ -127,7 +137,10 @@ export class AppMentionHandler {
 				ts: msg.message?.ts || "",
 				markdown_text: returnText,
 			});
+			totalTokenCount = message.totalTokenCount;
 		}
+
+		return { totalTokenCount };
 	}
 
 	private async buildMergedPosts(
