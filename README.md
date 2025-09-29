@@ -34,7 +34,6 @@ WebSocket モードで動作するため常時稼働するタイプなら問題�
 ```
 SLACK_BOT_TOKEN= OAuth & Permissions > OAuth Tokens
 SLACK_APP_TOKEN= Basic Information > App-Level Tokens > Generate an app-level token. Scope: "connections:write"
-SLACK_SIGNING_SECRET= Basic Infomation > Signing Secret
 
 ESA_API_KEY= your esa API Key
 ESA_TEAM_NAME= your team name
