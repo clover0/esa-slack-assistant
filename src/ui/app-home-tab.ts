@@ -28,6 +28,14 @@ export const buildAppHomeTabView = () => {
 					"3. スレッド内でメンション → スレッド内のこれまでのやりとりも踏まえて回答します。",
 			},
 		},
+		{ type: "divider" },
+		{
+			type: "section",
+			text: {
+				type: "mrkdwn",
+				text: "Powered by open-source: https://github.com/clover0/esa-slack-assistant",
+			},
+		},
 	];
 
 	return [...intro, ...howTo];
