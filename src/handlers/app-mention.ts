@@ -69,18 +69,24 @@ export class AppMentionHandler {
 	}
 
 	private async respondToNewThread({ client, event, logger }: AppMention) {
+		const now = new Date();
 		const first = await client.chat.postMessage({
 			channel: event.channel,
 			thread_ts: event.ts,
 			text: ":hourglass_flowing_sand:...",
 		});
 
-		const mergedPosts = await this.buildMergedPosts(event.text, logger);
+		const mergedPosts = await this.buildMergedPosts({
+			text: event.text,
+			logger: logger,
+			now,
+		});
 
-		const response = await this.answerService.answerQuestion(
-			mergedPosts,
-			event.text,
-		);
+		const response = await this.answerService.answerQuestion({
+			posts: mergedPosts,
+			question: event.text,
+			now,
+		});
 		let totalTokenCount: number | undefined;
 		let returnText = "";
 		for await (const message of response) {
@@ -97,6 +103,7 @@ export class AppMentionHandler {
 	}
 
 	private async respondInThread({ client, event, logger }: AppMention) {
+		const now = new Date();
 		const msg = await client.chat.postMessage({
 			channel: event.channel,
 			thread_ts: event.thread_ts,
@@ -115,17 +122,19 @@ export class AppMentionHandler {
 			}),
 		);
 
-		const mergedPosts = await this.buildMergedPosts(
-			event.text,
-			logger,
-			replyTexts,
-		);
+		const mergedPosts = await this.buildMergedPosts({
+			text: event.text,
+			logger: logger,
+			history: replyTexts,
+			now: now,
+		});
 
-		const response = await this.answerService.answerQuestion(
-			mergedPosts,
-			event.text,
-			replyTexts,
-		);
+		const response = await this.answerService.answerQuestion({
+			posts: mergedPosts,
+			question: event.text,
+			history: replyTexts,
+			now,
+		});
 
 		let totalTokenCount: number | undefined;
 		let returnText = "";
@@ -143,11 +152,17 @@ export class AppMentionHandler {
 		return { totalTokenCount };
 	}
 
-	private async buildMergedPosts(
-		text: string,
-		logger: any,
-		history?: ChatHistory[],
-	): Promise<Post[]> {
+	private async buildMergedPosts({
+		text,
+		logger,
+		history,
+		now,
+	}: {
+		text: string;
+		logger: any;
+		history?: ChatHistory[];
+		now: Date;
+	}): Promise<Post[]> {
 		const { categories } = await this.esaClient.getCategories(
 			{},
 			{ excludeArchive: true },
@@ -158,8 +173,18 @@ export class AppMentionHandler {
 			.map((c) => `${c.path} ${c.posts}`);
 		const categoryPathsOnly = categories.map((c) => c.path);
 		const [targetCategories, searchKeywords] = await Promise.all([
-			this.answerService.selectCategory(categoryWithCounts, text, history),
-			this.answerService.generateKeywords(categoryPathsOnly, text, history),
+			this.answerService.selectCategory({
+				categories: categoryWithCounts,
+				userQuestion: text,
+				history,
+				now,
+			}),
+			this.answerService.generateKeywords({
+				categories: categoryPathsOnly,
+				userQuestion: text,
+				history,
+				now,
+			}),
 		]);
 
 		logger.debug({
