@@ -143,12 +143,13 @@ describe("AppMentionHandler", () => {
 
 		const calledArgs = answerService.answerQuestion.mock.calls[0];
 
-		const postsArg = calledArgs[0] as Post[];
-		const usedPostNumbers = postsArg.map((p) => p.number).sort((a, b) => a - b);
+		const params = calledArgs[0];
+		const usedPostNumbers = params.posts
+			.map((p) => p.number)
+			.sort((a, b) => a - b);
 		expect(usedPostNumbers).toEqual([1, 2, 4]);
 
-		const questionArg = calledArgs[1];
-		expect(questionArg).toBe("question text");
+		expect(params.question).toBe("question text");
 
 		expect(update).toHaveBeenCalledTimes(2);
 		expect(update.mock.calls[0][0]).toEqual(
@@ -193,16 +194,15 @@ describe("AppMentionHandler", () => {
 			}),
 		);
 
-		const selectCategoryArgs = answerService.selectCategory.mock.calls[0];
-		expect(selectCategoryArgs[1]).toBe("question text");
-		expect(selectCategoryArgs[2]).toEqual([
+		const selectCategoryParams = answerService.selectCategory.mock.calls[0][0];
+		expect(selectCategoryParams.userQuestion).toBe("question text");
+		expect(selectCategoryParams.history).toEqual([
 			{ role: "user", text: "hello" },
 			{ role: "assistant", text: "hi" },
 		]);
 
-		const calledArgs = answerService.answerQuestion.mock.calls[0];
-		const history = calledArgs[2];
-		expect(history).toEqual([
+		const answerQuestionParams = answerService.answerQuestion.mock.calls[0][0];
+		expect(answerQuestionParams.history).toEqual([
 			{ role: "user", text: "hello" },
 			{ role: "assistant", text: "hi" },
 		]);
