@@ -2,7 +2,6 @@ import { FinishReason, GoogleGenAI, Modality } from "@google/genai";
 import type { ChatHistory } from "../dto/chat-history";
 import type { Chunk } from "../dto/chunk";
 import type { Post } from "../dto/post";
-import { esaMaxPostsPerPage } from "../externals/esa/client";
 import { formatJP } from "../util/date";
 import type {
 	AnswerQuestionParams,
@@ -27,7 +26,7 @@ ${formatJP(now)}
 * 各カテゴリを改行で区切る
 * 余計なテキストや説明は出力しない
 * 出力数は1〜3個まで
-* カテゴリ一覧には、カテゴリ名とそのカテゴリに属する記事数がスペース区切りで並んでいます。記事数が${esaMaxPostsPerPage}を超えるカテゴリは除外してください。
+* カテゴリ一覧には、カテゴリ名とそのカテゴリに属する記事数がスペース区切りで並んでいます。
 
 # 出力例
 \`\`\`
@@ -84,8 +83,7 @@ ${formatJP(now)}
 必須制約:
 * 「ドキュメント一覧」に含まれる情報のみを使用すること
 * 一般知識や想像による補足は禁止
-* ドキュメントが見つからない場合は、必ず以下の定型文で答えて、どのような質問にすると回答を得られるか質問文を提案してください
-    > 該当するドキュメントが見つかりませんでした
+* ドキュメントが見つからない場合は、ドキュメント見つからなかった旨を伝えて、ドキュメント一覧から候補になりそうな質問の仕方を提案すること
 
 回答の要件:
 * 回答に使用したドキュメントのURLを必ず示すこと
