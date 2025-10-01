@@ -91,7 +91,7 @@ export class AppMentionHandler {
 		let totalTokenCount: number | undefined;
 		let returnText = "";
 		for await (const message of response) {
-			returnText += message.textDelta;
+			returnText += message.textDelta ?? "";
 			await client.chat.update({
 				channel: event.channel,
 				ts: first.message?.ts || "",
@@ -146,7 +146,7 @@ export class AppMentionHandler {
 		let returnText = "";
 
 		for await (const message of response) {
-			returnText += message.textDelta;
+			returnText += message.textDelta ?? "";
 			await client.chat.update({
 				channel: event.channel,
 				ts: msg.message?.ts || "",
