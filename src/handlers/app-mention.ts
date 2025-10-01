@@ -5,6 +5,7 @@ import type { EsaClient } from "../externals/esa/client";
 import type { AnswerService } from "../services/answer-service";
 import type { EsaService } from "../services/esa-service";
 import { merge } from "../util/array";
+import { formatJP } from "../util/date";
 
 type AppMention = AllMiddlewareArgs & SlackEventMiddlewareArgs<"app_mention">;
 
@@ -116,10 +117,15 @@ export class AppMentionHandler {
 		});
 
 		const replyTexts: ChatHistory[] = (replies.messages ?? []).map(
-			(m): ChatHistory => ({
-				role: m.bot_id ? "assistant" : "user",
-				text: m.text ?? "",
-			}),
+			(m): ChatHistory => {
+				const timestamp = m.ts
+					? formatJP(new Date(parseFloat(m.ts) * 1000))
+					: "unknown time";
+				return {
+					role: m.bot_id ? "assistant" : "user",
+					text: m.text ? `${m.text}\nfrom ${m.user} at ${timestamp}` : "",
+				};
+			},
 		);
 
 		const mergedPosts = await this.buildMergedPosts({
