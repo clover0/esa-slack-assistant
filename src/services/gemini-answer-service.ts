@@ -3,39 +3,52 @@ import type { ChatHistory } from "../dto/chat-history";
 import type { Chunk } from "../dto/chunk";
 import type { Post } from "../dto/post";
 import { esaMaxPostsPerPage } from "../externals/esa/client";
-import type { AnswerService } from "./answer-service";
+import { formatJP } from "../util/date";
+import type {
+	AnswerQuestionParams,
+	AnswerService,
+	GenerateKeywordsParams,
+	SelectCategoryParams,
+} from "./answer-service";
 
-const selectCategoryInstruction = `あなたは esa ドキュメント検索のアシスタントです。
+const selectCategoryInstruction = ({ now }: { now: Date }) => {
+	return `あなたは esa ドキュメント検索のアシスタントです。
 ユーザーの質問と会話の文脈から関連する適切なカテゴリを特定して出力してください。
+
+# 現在日時
+${formatJP(now)}
 
 # 手順
 1. ユーザーの質問を正確に理解する
 2. esa に存在するカテゴリの中から、関連性の高いカテゴリを最大3つまで特定する
 
 # 出力ルール
-
 * 出力はカテゴリ名のみ
 * 各カテゴリを改行で区切る
 * 余計なテキストや説明は出力しない
 * 出力数は1〜3個まで
 * カテゴリ一覧には、カテゴリ名とそのカテゴリに属する記事数がスペース区切りで並んでいます。記事数が${esaMaxPostsPerPage}を超えるカテゴリは除外してください。
 
-
 # 出力例
-
 \`\`\`
 category
 category1/subcategory
 category2/sub1/sub2
 \`\`\`
 `;
+};
 
 const generateKeywordsInstruction = ({
 	userQuestion,
+	now,
 }: {
 	userQuestion: string;
+	now: Date;
 }) => `あなたは esa ドキュメント検索のアシスタントです。
 ユーザーの質問と会話の文脈から関連する適切なキーワードを出力してください。
+
+# 現在日時
+${formatJP(now)}
 
 # ユーザーの質問
 \`\`\`
@@ -53,8 +66,12 @@ ${userQuestion}
 * 出力はキーワードごとに1行ごとに出力する
 `;
 
-const answerQuestionInstruction = `あなたはナレッジシェアリングサービス「esa」の記事を利用してユーザーの質問に回答するAIアシスタントです。
+const answerQuestionInstruction = ({ now }: { now: Date }) => {
+	return `あなたはナレッジシェアリングサービス「esa」の記事を利用してユーザーの質問に回答するAIアシスタントです。
 ユーザーの質問に関連するドキュメントを「ドキュメント一覧」から探し、根拠とともに回答してください。
+
+# 現在日時
+${formatJP(now)}
 
 # 手順
 1. 会話の文脈を把握して、ユーザーの質問を正しく理解する
@@ -97,7 +114,10 @@ const answerQuestionInstruction = `あなたはナレッジシェアリングサ
 * title: ドキュメントのタイトル
 * url: ドキュメントのURL
 * body: マークダウンで書かれたドキュメントをJSONエンコードした本文
+* created_at: ドキュメントの作成日時
+* updated_at: ドキュメントの最終更新日時
 `;
+};
 
 export class GeminiAnswerService implements AnswerService {
 	private ai: GoogleGenAI;
@@ -115,11 +135,12 @@ export class GeminiAnswerService implements AnswerService {
 		}
 	}
 
-	async selectCategory(
-		categories: string[],
-		userQuestion: string,
-		history?: ChatHistory[],
-	) {
+	async selectCategory({
+		categories,
+		userQuestion,
+		history,
+		now,
+	}: SelectCategoryParams) {
 		const contents = this.buildContents(userQuestion, history);
 		const response = await this.ai.models.generateContent({
 			model: this.model,
@@ -127,7 +148,8 @@ export class GeminiAnswerService implements AnswerService {
 				temperature: 0,
 				maxOutputTokens: 2048,
 				systemInstruction:
-					selectCategoryInstruction + this.buildCategorySection(categories),
+					selectCategoryInstruction({ now: new Date() }) +
+					this.buildCategorySection(categories),
 				responseModalities: [Modality.TEXT],
 			},
 			contents: contents,
@@ -144,13 +166,14 @@ ${categories.join("\n")}
 `;
 	}
 
-	async generateKeywords(
-		categories: string[],
-		userQuestion: string,
-		history?: ChatHistory[],
-	) {
+	async generateKeywords({
+		categories,
+		userQuestion,
+		history,
+		now,
+	}: GenerateKeywordsParams) {
 		const instruction =
-			generateKeywordsInstruction({ userQuestion }) +
+			generateKeywordsInstruction({ userQuestion, now: new Date() }) +
 			this.buildCategorySection(categories);
 		const contents = this.buildContents(userQuestion, history);
 		const response = await this.ai.models.generateContent({
@@ -173,6 +196,7 @@ ${categories.join("\n")}
 				(p) => `title: ${p.name}
 url: ${p.url}
 body: ${p.body_md}
+created_at: ${p.created_at}
 updated_at: ${p.updated_at}`,
 			)
 			.join("\n===");
@@ -183,11 +207,12 @@ ${documents}
 `;
 	}
 
-	async answerQuestion(
-		posts: Post[],
-		question: string,
-		history?: ChatHistory[],
-	) {
+	async answerQuestion({
+		posts,
+		question,
+		history,
+		now,
+	}: AnswerQuestionParams) {
 		const contents = this.buildContents(question, history);
 		const stream = await this.ai.models.generateContentStream({
 			model: this.model,
@@ -195,7 +220,8 @@ ${documents}
 				temperature: 0,
 				maxOutputTokens: 40000, // Be careful of Slack's maximum character limit for replies.
 				systemInstruction:
-					answerQuestionInstruction + this.buildPostsSection(posts),
+					answerQuestionInstruction({ now: new Date() }) +
+					this.buildPostsSection(posts),
 				responseModalities: [Modality.TEXT],
 			},
 			contents: contents,
