@@ -178,8 +178,13 @@ describe("AppMentionHandler", () => {
 
 		replies.mockResolvedValue({
 			messages: [
-				{ text: "hello", bot_id: undefined },
-				{ text: "hi", bot_id: "B123" },
+				{
+					text: "hello",
+					bot_id: undefined,
+					ts: "1759359688.090919",
+					user: "user-1",
+				},
+				{ text: "hi", bot_id: "B123", ts: "1759359689.890919", user: "bot" },
 			],
 		});
 
@@ -197,14 +202,14 @@ describe("AppMentionHandler", () => {
 		const selectCategoryParams = answerService.selectCategory.mock.calls[0][0];
 		expect(selectCategoryParams.userQuestion).toBe("question text");
 		expect(selectCategoryParams.history).toEqual([
-			{ role: "user", text: "hello" },
-			{ role: "assistant", text: "hi" },
+			{ role: "user", text: "hello\nfrom user-1 at 2025/10/2 8:01:28" },
+			{ role: "assistant", text: "hi\nfrom bot at 2025/10/2 8:01:29" },
 		]);
 
 		const answerQuestionParams = answerService.answerQuestion.mock.calls[0][0];
 		expect(answerQuestionParams.history).toEqual([
-			{ role: "user", text: "hello" },
-			{ role: "assistant", text: "hi" },
+			{ role: "user", text: "hello\nfrom user-1 at 2025/10/2 8:01:28" },
+			{ role: "assistant", text: "hi\nfrom bot at 2025/10/2 8:01:29" },
 		]);
 
 		expect(update).toHaveBeenCalledTimes(2);
