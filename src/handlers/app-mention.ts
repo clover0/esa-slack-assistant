@@ -4,6 +4,7 @@ import type { Post } from "../dto/post";
 import type { EsaClient } from "../externals/esa/client";
 import type { AnswerService } from "../services/answer-service";
 import type { EsaService } from "../services/esa-service";
+import { loadingMessageBlock } from "../ui/app-mention";
 import { merge } from "../util/array";
 import { formatJP } from "../util/date";
 
@@ -74,7 +75,7 @@ export class AppMentionHandler {
 		const first = await client.chat.postMessage({
 			channel: event.channel,
 			thread_ts: event.ts,
-			text: ":hourglass_flowing_sand:...",
+			blocks: [loadingMessageBlock()],
 		});
 
 		const mergedPosts = await this.buildMergedPosts({
@@ -108,7 +109,7 @@ export class AppMentionHandler {
 		const msg = await client.chat.postMessage({
 			channel: event.channel,
 			thread_ts: event.thread_ts,
-			text: ":hourglass_flowing_sand:...",
+			blocks: [loadingMessageBlock()],
 		});
 
 		const replies = await client.conversations.replies({
