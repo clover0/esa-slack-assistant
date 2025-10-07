@@ -3,6 +3,7 @@ import type { EsaClient } from "../../src/externals/esa/client";
 import { AppMentionHandler } from "../../src/handlers/app-mention";
 import type { AnswerService } from "../../src/services/answer-service";
 import { EsaService } from "../../src/services/esa-service";
+import { loadingMessageBlock } from "../../src/ui/app-mention";
 
 async function* genChunks(parts: string[]) {
 	for (const p of parts) {
@@ -137,7 +138,7 @@ describe("AppMentionHandler", () => {
 			expect.objectContaining({
 				channel: "C123",
 				thread_ts: "111.111",
-				text: ":hourglass_flowing_sand:...",
+				blocks: [loadingMessageBlock()],
 			}),
 		);
 
@@ -195,7 +196,7 @@ describe("AppMentionHandler", () => {
 		expect(postMessage).toHaveBeenCalledWith(
 			expect.objectContaining({
 				thread_ts: "111.111",
-				text: ":hourglass_flowing_sand:...",
+				blocks: [loadingMessageBlock()],
 			}),
 		);
 
