@@ -18,29 +18,37 @@ export class AppMentionHandler {
 	) {}
 
 	async handle({ context, client, event, logger }: AppMention) {
-		logger.info({
-			msg: "start handle",
-			handler: "AppMentionHandler",
-			channel: event.channel,
-			user: event.user,
-		});
-
-		if (
-			event.user_profile?.is_restricted ||
-			event.user_profile?.is_ultra_restricted
-		) {
-			// Ignore messages from restricted users (e.g., guests)
-			logger.info({ msg: "ignoring message from restricted user" });
-			await client.chat.postMessage({
-				channel: event.channel,
-				thread_ts: event.ts,
-				text: `ゲストの方は利用できないようにしています。`,
-			});
-			return;
-		}
-
 		let totalTokenCount: number | undefined;
+
 		try {
+			if (
+				event.user_profile?.is_restricted ||
+				event.user_profile?.is_ultra_restricted
+			) {
+				// Ignore messages from restricted users (e.g., guests)
+				logger.info({ msg: "ignoring message from restricted user" });
+				await client.chat.postMessage({
+					channel: event.channel,
+					thread_ts: event.ts,
+					text: `ゲストの方は利用できないようにしています。`,
+				});
+				return;
+			}
+
+			const channelInfo = await client.conversations.info({
+				channel: event.channel,
+			});
+
+			if (channelInfo.channel?.is_shared) {
+				logger.info({ msg: "ignoring message from externally shared channel" });
+				await client.chat.postMessage({
+					channel: event.channel,
+					thread_ts: event.ts,
+					text: `外部と共有しているチャンネルでは利用できません。`,
+				});
+				return;
+			}
+
 			if (event.thread_ts) {
 				const resp = await this.respondInThread({
 					context,
@@ -75,6 +83,7 @@ export class AppMentionHandler {
 		const first = await client.chat.postMessage({
 			channel: event.channel,
 			thread_ts: event.ts,
+			text: "記事を探しています...:hourglass_flowing_sand:",
 			blocks: [loadingMessageBlock()],
 		});
 
