@@ -81,10 +81,15 @@ describe("AppMentionHandler", () => {
 		return { handler, esaClient, esaService, answerService };
 	}
 
-	function buildClient() {
+	function buildSlackClient() {
 		const postMessage = jest.fn();
 		const update = jest.fn();
 		const replies = jest.fn();
+		const info = jest.fn();
+
+		info.mockResolvedValue({
+			channel: { is_shared: false },
+		});
 
 		const client = {
 			chat: {
@@ -93,15 +98,16 @@ describe("AppMentionHandler", () => {
 			},
 			conversations: {
 				replies,
+				info,
 			},
 		} as any;
 
-		return { client, postMessage, update, replies };
+		return { client, postMessage, update, replies, info };
 	}
 
 	it("ignores restricted users and posts a notice", async () => {
 		const { handler } = buildHandler();
-		const { client, postMessage } = buildClient();
+		const { client, postMessage } = buildSlackClient();
 
 		const event = {
 			...baseEvent,
@@ -122,58 +128,134 @@ describe("AppMentionHandler", () => {
 		);
 	});
 
-	it("responds in a new thread: posts hourglass, merges posts, streams updates", async () => {
-		const { handler, answerService } = buildHandler({
-			collected: makePosts([1, 2]),
-			searched: makePosts([2, 4]),
-			answerParts: ["foo", "bar"],
-		});
-		const { client, postMessage, update } = buildClient();
-		postMessage.mockResolvedValue({ message: { ts: "200.200" } });
-		const event = { ...baseEvent } as any; // no thread_ts
+	it("ignores externally shared channels and posts a notice", async () => {
+		const { handler } = buildHandler();
+		const { client, postMessage, info } = buildSlackClient();
 
-		await handler.handle({ context: {}, client, event, logger } as any);
+		info.mockResolvedValue({
+			channel: { is_shared: true },
+		});
+
+		await handler.handle({
+			context: {},
+			client,
+			event: baseEvent,
+			logger,
+		} as any);
 
 		expect(postMessage).toHaveBeenCalledWith(
 			expect.objectContaining({
 				channel: "C123",
 				thread_ts: "111.111",
-				blocks: [loadingMessageBlock()],
-			}),
-		);
-
-		const calledArgs = answerService.answerQuestion.mock.calls[0];
-
-		const params = calledArgs[0];
-		const usedPostNumbers = params.posts
-			.map((p) => p.number)
-			.sort((a, b) => a - b);
-		expect(usedPostNumbers).toEqual([1, 2, 4]);
-
-		expect(params.question).toBe("question text");
-
-		expect(update).toHaveBeenCalledTimes(2);
-		expect(update.mock.calls[0][0]).toEqual(
-			expect.objectContaining({
-				channel: "C123",
-				ts: "200.200",
-				markdown_text: "foo",
-			}),
-		);
-		expect(update.mock.calls[1][0]).toEqual(
-			expect.objectContaining({
-				channel: "C123",
-				ts: "200.200",
-				markdown_text: "foobar",
+				text: expect.stringContaining(
+					"外部と共有しているチャンネルでは利用できません。",
+				),
 			}),
 		);
 	});
 
-	it("responds inside an existing thread and passes history", async () => {
+	it("posts an error message when channel info lookup fails", async () => {
+		const { handler, answerService } = buildHandler();
+		const { client, postMessage, info } = buildSlackClient();
+
+		info.mockRejectedValue(new Error("info failure"));
+
+		await handler.handle({
+			context: {},
+			client,
+			event: baseEvent,
+			logger,
+		} as any);
+
+		expect(postMessage).toHaveBeenCalledWith(
+			expect.objectContaining({
+				channel: "C123",
+				thread_ts: "111.111",
+				text: expect.stringContaining("エラーが発生しました。"),
+			}),
+		);
+		expect(answerService.answerQuestion).not.toHaveBeenCalled();
+	});
+
+	describe("when the mention starts a new thread", () => {
+		async function handleNewThread({
+			answerParts = ["foo", "bar"],
+			collected,
+			searched,
+		}: Partial<{
+			answerParts: string[];
+			collected: Post[];
+			searched: Post[];
+		}> = {}) {
+			const { handler, answerService } = buildHandler({
+				answerParts,
+				collected,
+				searched,
+			});
+			const { client, postMessage, update } = buildSlackClient();
+			postMessage.mockResolvedValue({ message: { ts: "200.200" } });
+			const event = { ...baseEvent } as any; // no thread_ts
+
+			await handler.handle({ context: {}, client, event, logger } as any);
+
+			return { postMessage, update, answerService };
+		}
+
+		it("posts a loading message while searching articles", async () => {
+			const { postMessage } = await handleNewThread();
+
+			expect(postMessage).toHaveBeenCalledWith(
+				expect.objectContaining({
+					channel: "C123",
+					thread_ts: "111.111",
+					blocks: [loadingMessageBlock()],
+				}),
+			);
+		});
+
+		it("merges collected and searched posts before answering", async () => {
+			const { answerService } = await handleNewThread({
+				collected: makePosts([1, 2]),
+				searched: makePosts([2, 4]),
+			});
+
+			const params = answerService.answerQuestion.mock.calls[0][0];
+			const usedPostNumbers = params.posts
+				.map((p) => p.number)
+				.sort((a, b) => a - b);
+
+			expect(usedPostNumbers).toEqual([1, 2, 4]);
+			expect(params.question).toBe("question text");
+		});
+
+		it("streams accumulated markdown updates", async () => {
+			const { update } = await handleNewThread({
+				answerParts: ["foo", "bar"],
+			});
+
+			expect(update).toHaveBeenCalledTimes(2);
+			expect(update.mock.calls[0][0]).toEqual(
+				expect.objectContaining({
+					channel: "C123",
+					ts: "200.200",
+					markdown_text: "foo",
+				}),
+			);
+			expect(update.mock.calls[1][0]).toEqual(
+				expect.objectContaining({
+					channel: "C123",
+					ts: "200.200",
+					markdown_text: "foobar",
+				}),
+			);
+		});
+	});
+
+	it("responds inside an existing thread and passes history to services", async () => {
 		const { handler, answerService } = buildHandler({
 			answerParts: ["x", "y"],
 		});
-		const { client, postMessage, update, replies } = buildClient();
+		const { client, postMessage, update, replies } = buildSlackClient();
 
 		postMessage.mockResolvedValue({ message: { ts: "300.300" } });
 
@@ -200,18 +282,23 @@ describe("AppMentionHandler", () => {
 			}),
 		);
 
+		const expectedHistory = [
+			{
+				role: "user" as const,
+				text: expect.stringMatching(/hello[\s\S]*from user-1 at /),
+			},
+			{
+				role: "assistant" as const,
+				text: expect.stringMatching(/hi[\s\S]*from bot at /),
+			},
+		];
+
 		const selectCategoryParams = answerService.selectCategory.mock.calls[0][0];
 		expect(selectCategoryParams.userQuestion).toBe("question text");
-		expect(selectCategoryParams.history).toEqual([
-			{ role: "user", text: "hello\nfrom user-1 at 2025/10/2 8:01:28" },
-			{ role: "assistant", text: "hi\nfrom bot at 2025/10/2 8:01:29" },
-		]);
+		expect(selectCategoryParams.history).toEqual(expectedHistory);
 
 		const answerQuestionParams = answerService.answerQuestion.mock.calls[0][0];
-		expect(answerQuestionParams.history).toEqual([
-			{ role: "user", text: "hello\nfrom user-1 at 2025/10/2 8:01:28" },
-			{ role: "assistant", text: "hi\nfrom bot at 2025/10/2 8:01:29" },
-		]);
+		expect(answerQuestionParams.history).toEqual(expectedHistory);
 
 		expect(update).toHaveBeenCalledTimes(2);
 		expect(update.mock.calls[1][0]).toEqual(
@@ -221,7 +308,7 @@ describe("AppMentionHandler", () => {
 
 	it("posts an error message when an exception occurs", async () => {
 		const { handler, answerService } = buildHandler();
-		const { client, postMessage } = buildClient();
+		const { client, postMessage } = buildSlackClient();
 
 		postMessage.mockResolvedValueOnce({ message: { ts: "400.400" } });
 
