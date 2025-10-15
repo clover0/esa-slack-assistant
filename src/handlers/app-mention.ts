@@ -113,7 +113,12 @@ export class AppMentionHandler {
 		return { totalTokenCount };
 	}
 
-	private async respondInThread({ client, event, logger }: AppMention) {
+	private async respondInThread({
+		client,
+		event,
+		logger,
+		context,
+	}: AppMention) {
 		const now = new Date();
 		const msg = await client.chat.postMessage({
 			channel: event.channel,
@@ -131,8 +136,11 @@ export class AppMentionHandler {
 				const timestamp = m.ts
 					? formatJP(new Date(parseFloat(m.ts) * 1000))
 					: "unknown time";
+				const isAssistant = context.botId
+					? m.bot_id === context.botId
+					: Boolean(m.bot_id);
 				return {
-					role: m.bot_id ? "assistant" : "user",
+					role: isAssistant ? "assistant" : "user",
 					text: m.text ? `${m.text}\nfrom ${m.user} at ${timestamp}` : "",
 				};
 			},
