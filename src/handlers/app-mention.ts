@@ -123,6 +123,7 @@ export class AppMentionHandler {
 		const msg = await client.chat.postMessage({
 			channel: event.channel,
 			thread_ts: event.thread_ts,
+			text: "記事を探しています...:hourglass_flowing_sand:",
 			blocks: [loadingMessageBlock()],
 		});
 
