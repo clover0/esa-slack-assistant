@@ -7,4 +7,5 @@ export type Post = {
 	created_at: string;
 	updated_at: string;
 	url: string;
+	tags: string[];
 };
