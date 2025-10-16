@@ -102,6 +102,8 @@ ${formatJP(now)}
 # ドキュメント一覧の構成
 * ===を区切り文字として、複数のドキュメントを1つにまとめています
 * title: ドキュメントのタイトル
+* id: ドキュメントのid
+* tags: ドキュメントのタグ一覧（カンマ区切り）
 * url: ドキュメントのURL
 * body: マークダウンで書かれたドキュメントをJSONエンコードした本文
 * created_at: ドキュメントの作成日時
@@ -184,12 +186,15 @@ ${categories.join("\n")}
 		const documents = posts
 			.map(
 				(p) => `title: ${p.name}
+id: ${p.number}
+tags: ${p.tags.join(",")}
 url: ${p.url}
 body: ${p.body_md}
 created_at: ${p.created_at}
 updated_at: ${p.updated_at}`,
 			)
-			.join("\n===");
+			.join("\n===\n");
+
 		return `
 
 # ドキュメント一覧
