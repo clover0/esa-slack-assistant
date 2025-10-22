@@ -48,7 +48,7 @@ export class JSONConsoleLogger implements Logger {
 		if (JSONConsoleLogger.isMoreOrEqualSevere(LogLevel.DEBUG, this.level)) {
 			console.debug(
 				JSON.stringify({
-					level: this.level,
+					level: LogLevel.DEBUG,
 					name: this.name,
 					content: msg.length === 1 ? msg[0] : msg,
 				}),
@@ -64,7 +64,7 @@ export class JSONConsoleLogger implements Logger {
 		if (JSONConsoleLogger.isMoreOrEqualSevere(LogLevel.INFO, this.level)) {
 			console.info(
 				JSON.stringify({
-					level: this.level,
+					level: LogLevel.INFO,
 					name: this.name,
 					content: msg.length === 1 ? msg[0] : msg,
 				}),
@@ -80,7 +80,7 @@ export class JSONConsoleLogger implements Logger {
 		if (JSONConsoleLogger.isMoreOrEqualSevere(LogLevel.WARN, this.level)) {
 			console.warn(
 				JSON.stringify({
-					level: this.level,
+					level: LogLevel.WARN,
 					name: this.name,
 					content: msg.length === 1 ? msg[0] : msg,
 				}),
@@ -92,11 +92,16 @@ export class JSONConsoleLogger implements Logger {
 	 * Log an error message
 	 */
 	// biome-ignore lint/suspicious/noExplicitAny: can log anything
-	public error(...msg: any[]): void {
+	public error(..._msg: any[]): void {
 		if (JSONConsoleLogger.isMoreOrEqualSevere(LogLevel.ERROR, this.level)) {
+			const msg = _msg.map((v) =>
+				v instanceof Error
+					? { name: v.name, message: v.message, stack: v.stack }
+					: v,
+			);
 			console.error(
 				JSON.stringify({
-					level: this.level,
+					level: LogLevel.ERROR,
 					name: this.name,
 					content: msg.length === 1 ? msg[0] : msg,
 				}),
