@@ -227,7 +227,7 @@ export class AppMentionHandler {
 		]);
 
 		const mergedPosts = merge(collectedPosts, searchedPosts, (x) => x.number);
-		logger.info({ msg: "searched posts", length: mergedPosts.length });
+		logger.info({ msg: "posts", count: mergedPosts.length });
 
 		return mergedPosts;
 	}
