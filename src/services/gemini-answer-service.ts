@@ -1,4 +1,9 @@
-import { FinishReason, GoogleGenAI, Modality } from "@google/genai";
+import {
+	type ContentListUnion,
+	FinishReason,
+	GoogleGenAI,
+	Modality,
+} from "@google/genai";
 import type { ChatHistory } from "../dto/chat-history";
 import type { Chunk } from "../dto/chunk";
 import type { Post } from "../dto/post";
@@ -135,13 +140,14 @@ export class GeminiAnswerService implements AnswerService {
 		now,
 	}: SelectCategoryParams) {
 		const contents = this.buildContents(userQuestion, history);
+		console.log(contents);
 		const response = await this.generateContentWithRetry({
 			model: this.model,
 			config: {
 				temperature: 0,
 				maxOutputTokens: 2048,
 				systemInstruction:
-					selectCategoryInstruction({ now: new Date() }) +
+					selectCategoryInstruction({ now: now ?? new Date() }) +
 					this.buildCategorySection(categories),
 				responseModalities: [Modality.TEXT],
 			},
@@ -166,7 +172,7 @@ ${categories.join("\n")}
 		now,
 	}: GenerateKeywordsParams) {
 		const instruction =
-			generateKeywordsInstruction({ userQuestion, now: new Date() }) +
+			generateKeywordsInstruction({ userQuestion, now }) +
 			this.buildCategorySection(categories);
 		const contents = this.buildContents(userQuestion, history);
 		const response = await this.generateContentWithRetry({
@@ -216,8 +222,7 @@ ${documents}
 				temperature: 0,
 				maxOutputTokens: 40000, // Be careful of Slack's maximum character limit for replies.
 				systemInstruction:
-					answerQuestionInstruction({ now: new Date() }) +
-					this.buildPostsSection(posts),
+					answerQuestionInstruction({ now }) + this.buildPostsSection(posts),
 				responseModalities: [Modality.TEXT],
 			},
 			contents: contents,
@@ -282,14 +287,28 @@ ${documents}
 	private buildContents(
 		question: string,
 		history?: ChatHistory[],
-	): { role?: string; text: string }[] {
-		return history
-			? [
-					...history.flatMap((h) => [
-						{ role: h.role === "user" ? "user" : "model", text: h.text },
-					]),
-					{ text: question },
-				]
-			: [{ text: question }];
+	): ContentListUnion {
+		if (history && history.length > 0) {
+			const contents = history.map((h) => ({
+				role: h.role === "assistant" ? "model" : "user",
+				parts: [{ text: h.text }],
+			}));
+
+			const lastText = history[history.length - 1]?.text ?? "";
+			if (lastText.trim() !== question.trim()) {
+				contents.push({
+					role: "user",
+					parts: [{ text: question }],
+				});
+			}
+			return contents;
+		}
+
+		return [
+			{
+				role: "user",
+				parts: [{ text: question }],
+			},
+		];
 	}
 }
