@@ -140,7 +140,6 @@ export class GeminiAnswerService implements AnswerService {
 		now,
 	}: SelectCategoryParams) {
 		const contents = this.buildContents(userQuestion, history);
-		console.log(contents);
 		const response = await this.generateContentWithRetry({
 			model: this.model,
 			config: {
