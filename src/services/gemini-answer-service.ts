@@ -3,6 +3,7 @@ import type { ChatHistory } from "../dto/chat-history";
 import type { Chunk } from "../dto/chunk";
 import type { Post } from "../dto/post";
 import { formatJP } from "../util/date";
+import { retry } from "../util/google-genai";
 import type {
 	AnswerQuestionParams,
 	AnswerService,
@@ -134,7 +135,7 @@ export class GeminiAnswerService implements AnswerService {
 		now,
 	}: SelectCategoryParams) {
 		const contents = this.buildContents(userQuestion, history);
-		const response = await this.ai.models.generateContent({
+		const response = await this.generateContentWithRetry({
 			model: this.model,
 			config: {
 				temperature: 0,
@@ -168,7 +169,7 @@ ${categories.join("\n")}
 			generateKeywordsInstruction({ userQuestion, now: new Date() }) +
 			this.buildCategorySection(categories);
 		const contents = this.buildContents(userQuestion, history);
-		const response = await this.ai.models.generateContent({
+		const response = await this.generateContentWithRetry({
 			model: this.model,
 			config: {
 				temperature: 0,
@@ -209,7 +210,7 @@ ${documents}
 		now,
 	}: AnswerQuestionParams) {
 		const contents = this.buildContents(question, history);
-		const stream = await this.ai.models.generateContentStream({
+		const stream = await this.generateContentStreamWithRetry({
 			model: this.model,
 			config: {
 				temperature: 0,
@@ -245,6 +246,30 @@ ${documents}
 		}
 
 		return mapStream();
+	}
+
+	private async generateContentWithRetry(
+		args: any,
+		maxRetries = 3,
+		initialDelayMs = 1000,
+	): Promise<any> {
+		return retry({
+			fn: () => this.ai.models.generateContent(args),
+			maxRetries,
+			initialDelayMs,
+		});
+	}
+
+	private async generateContentStreamWithRetry(
+		args: any,
+		maxRetries = 3,
+		initialDelayMs = 1000,
+	): Promise<AsyncIterable<any>> {
+		return retry({
+			fn: () => this.ai.models.generateContentStream(args),
+			maxRetries,
+			initialDelayMs,
+		});
 	}
 
 	private parseLines(text: string): string[] {
