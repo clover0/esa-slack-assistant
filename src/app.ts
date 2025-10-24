@@ -1,28 +1,43 @@
-import { App, type LogLevel } from "@slack/bolt";
+import { App } from "@slack/bolt";
 import * as dotenv from "dotenv";
-import express from "express";
 import { EsaClient } from "./externals/esa/client";
 import { AppHomeOpenedHandler } from "./handlers/app-home-opended";
 import { AppMentionHandler } from "./handlers/app-mention";
+import { buildHttpApp } from "./http/http-app";
 import registerListeners from "./listeners";
 import { handleLogger } from "./middleware";
+import {
+	createInitialSocketState,
+	markConnected,
+	markDisconnected,
+	type SocketState,
+} from "./readiness";
 import { EsaService } from "./services/esa-service";
 import { GeminiAnswerService } from "./services/gemini-answer-service";
+import { startSlackConnectionMonitor } from "./services/slack-connection-monitor";
+import { loadConfig } from "./util/config";
 import { JSONConsoleLogger } from "./util/logger";
 
 dotenv.config();
 
-const logLevel = (process.env.LOG_LEVEL ?? "info") as LogLevel;
+const config = loadConfig();
+
+const socketState: SocketState = createInitialSocketState();
+
 const app = new App({
 	token: process.env.SLACK_BOT_TOKEN,
 	socketMode: true,
 	appToken: process.env.SLACK_APP_TOKEN,
+	clientOptions: {
+		// keep Slack API calls short to avoid blocking readiness
+		timeout: 10000,
+	},
 });
 
-if (process.env.LOG_FORMAT === "json") {
+if (config.logFormat === "json") {
 	app.logger = new JSONConsoleLogger();
 }
-app.logger.setLevel(logLevel);
+app.logger.setLevel(config.logLevel);
 app.logger.setName("esa-slack-assistant");
 
 const esaClient = new EsaClient({
@@ -47,22 +62,56 @@ const appMentionHandler = new AppMentionHandler(
 
 registerListeners(app, appHomeOpenedHandler, appMentionHandler);
 
-// health check endpoint for Google Cloud Run or other container platforms
-const httpApp = express();
-httpApp.get("/healthz", (_, res) => res.status(200).send("ok"));
+const httpApp = buildHttpApp({
+	state: socketState,
+	graceMs: config.readinessGraceMs,
+});
 
-const port = process.env.PORT || 8080;
-const host = process.env.HOSTNAME || "0.0.0.0";
+let monitor = undefined as undefined | { stop: () => void };
+
 (async () => {
 	try {
-		app.logger.info({ msg: `http server starting on port ${port}` });
 		app.logger.debug("debug mode on");
-		httpApp.listen(port as number, host, async () => {
-			app.use(handleLogger);
-			await app.start();
-			app.logger.info({ msg: "esa-assistant is running on websocket mode" });
+		app.logger.info({ msg: `http server starting on port ${config.port}` });
+
+		app.use(handleLogger);
+
+		httpApp.listen(config.port as number, config.host, async () => {
+			try {
+				await app.start();
+				markConnected(socketState);
+				app.logger.info({ msg: "running on websocket mode" });
+			} catch (startErr) {
+				markDisconnected(socketState);
+				app.logger.error({
+					msg: "unable to start socket mode",
+					error: startErr,
+				});
+			}
+
+			monitor = startSlackConnectionMonitor({
+				app,
+				state: socketState,
+				intervalMs: config.slackPingIntervalMs,
+				token: process.env.SLACK_BOT_TOKEN,
+			});
 		});
 	} catch (error) {
 		app.logger.error({ msg: "unable to start app", error: error });
 	}
 })();
+
+const shutdown = async (signal: string) => {
+	try {
+		app.logger.info({ msg: `received ${signal}, shutting down` });
+		if (monitor) monitor.stop();
+		await app.stop();
+		process.exit(0);
+	} catch (e) {
+		app.logger.error({ msg: "error during shutdown", error: e });
+		process.exit(1);
+	}
+};
+
+process.on("SIGINT", () => void shutdown("SIGINT"));
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
