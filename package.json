@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.7",
-    "@types/express": "5.0.3",
+    "@types/express": "5.0.4",
     "@types/jest": "30.0.0",
     "@types/node": "24.5.2",
     "jest": "30.2.0",
