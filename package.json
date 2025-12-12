@@ -16,7 +16,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@google/genai": "1.25.0",
+    "@google/genai": "1.32.0",
     "@slack/bolt": "4.5.0",
     "axios": "1.13.2",
     "dotenv": "17.2.3",
