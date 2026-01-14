@@ -11,7 +11,10 @@
     "lint": "biome lint ./src",
     "lint-fix": "biome lint fix --write ./src",
     "check-fix": "biome check --write ./src",
-    "test": "jest"
+    "test": "jest",
+    "mastra:dev": "mastra dev",
+    "mastra:build": "mastra build",
+    "mastra:start": "mastra start"
   },
   "author": "",
   "license": "MIT",
