@@ -17,7 +17,7 @@
   "license": "MIT",
   "dependencies": {
     "@google/genai": "1.25.0",
-    "@mastra/core": "^0.24.9",
+    "@mastra/core": "0.24.9",
     "@slack/bolt": "4.6.0",
     "axios": "1.13.2",
     "dotenv": "17.2.3",
