@@ -1,4 +1,4 @@
-FROM node:22.20-trixie-slim@sha256:535ba2ed7dcf0dec29b0af4cac2b87ccdd935880212d4b9537e767b078ce1ca3 AS builder
+FROM node:22.22.0-trixie-slim@sha256:280792ea1ffd24ac282c6aafac78c830608ab85afea77a9a03e5d07c57ee5559 AS builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ COPY src src
 RUN pnpm run build
 
 
-FROM node:22.20-trixie-slim@sha256:535ba2ed7dcf0dec29b0af4cac2b87ccdd935880212d4b9537e767b078ce1ca3 AS runner
+FROM node:22.22.0-trixie-slim@sha256:280792ea1ffd24ac282c6aafac78c830608ab85afea77a9a03e5d07c57ee5559 AS runner
 
 WORKDIR /app
 
