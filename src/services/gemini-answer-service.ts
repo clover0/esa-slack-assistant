@@ -12,7 +12,11 @@ import { retry } from "../util/google-genai";
 import type {
 	AnswerQuestionParams,
 	AnswerService,
+	CheckDuplicateParams,
+	CheckDuplicateResult,
+	GenerateArticleParams,
 	GenerateKeywordsParams,
+	GeneratedArticle,
 	SelectCategoryParams,
 } from "./answer-service";
 
@@ -114,6 +118,68 @@ ${formatJP(now)}
 * body: マークダウンで書かれたドキュメントをJSONエンコードした本文
 * created_at: ドキュメントの作成日時
 * updated_at: ドキュメントの最終更新日時
+`;
+};
+
+const checkDuplicateInstruction = ({ now }: { now: Date }) => {
+	return `あなたは esa ドキュメント管理のアシスタントです。
+Slackの会話内容と既存のドキュメントを比較し、重複があるかを判定してください。
+
+# 現在日時
+${formatJP(now)}
+
+# 手順
+1. 会話の要約を理解する
+2. ドキュメント一覧から、会話の内容をカバーしている記事があるか確認する
+3. 重複判定と追加情報の抽出を行う
+
+# 判定基準（やや厳しめ）
+* 会話の主要なトピックが既存記事で十分にカバーされている場合のみ「重複あり」と判定
+* 部分的に関連しているだけでは「重複あり」としない
+* 既存記事に書かれていない新しい情報が会話に含まれている場合、その情報を追加情報として抽出する
+
+# 出力形式（JSON）
+\`\`\`json
+{
+  "isDuplicate": true または false,
+  "matchedPostId": 重複ありの場合は記事のid（数値）、なければnull,
+  "additionalInfo": ["追加情報1", "追加情報2"] または []
+}
+\`\`\`
+* 必ず上記のJSON形式のみを出力すること
+* 余計なテキストや説明は出力しない
+`;
+};
+
+const generateArticleInstruction = ({ now }: { now: Date }) => {
+	return `あなたは esa ドキュメント作成のアシスタントです。
+Slackの会話内容をもとに、esaの記事を作成してください。
+
+# 現在日時
+${formatJP(now)}
+
+# 手順
+1. 会話内容を分析し、主要なトピックを特定する
+2. 記事のタイトル、本文、タグを生成する
+
+# 記事作成のルール
+* タイトルは簡潔で内容を表すものにする
+* 本文はマークダウン形式で記述する
+* 会話の内容を整理し、読みやすい形にまとめる
+* 質問と回答の形式が適切な場合はQ&A形式で記述する
+* 手順や設定方法の場合は番号付きリストで記述する
+* タグは内容に関連するキーワードを3〜5個程度抽出する
+
+# 出力形式（JSON）
+\`\`\`json
+{
+  "title": "記事のタイトル",
+  "body": "マークダウン形式の本文",
+  "tags": ["タグ1", "タグ2", "タグ3"]
+}
+\`\`\`
+* 必ず上記のJSON形式のみを出力すること
+* 余計なテキストや説明は出力しない
 `;
 };
 
@@ -309,5 +375,95 @@ ${documents}
 				parts: [{ text: question }],
 			},
 		];
+	}
+
+	async checkDuplicate({
+		posts,
+		conversationSummary,
+		now,
+	}: CheckDuplicateParams): Promise<CheckDuplicateResult> {
+		const response = await this.generateContentWithRetry({
+			model: this.model,
+			config: {
+				temperature: 0,
+				maxOutputTokens: 2048,
+				systemInstruction:
+					checkDuplicateInstruction({ now }) + this.buildPostsSection(posts),
+				responseModalities: [Modality.TEXT],
+			},
+			contents: [
+				{
+					role: "user",
+					parts: [
+						{
+							text: `以下のSlack会話の内容と、既存のドキュメントを比較してください。\n\n# 会話の要約\n${conversationSummary}`,
+						},
+					],
+				},
+			],
+		});
+
+		const jsonText = this.extractJson(response.text || "");
+		const result = JSON.parse(jsonText);
+
+		const matchedPost = result.matchedPostId
+			? posts.find((p) => p.number === result.matchedPostId)
+			: undefined;
+
+		return {
+			isDuplicate: result.isDuplicate,
+			matchedPost,
+			additionalInfo: result.additionalInfo || [],
+		};
+	}
+
+	async generateArticle({
+		conversation,
+		category,
+		now,
+	}: GenerateArticleParams): Promise<GeneratedArticle> {
+		const conversationText = conversation
+			.map((c) => `[${c.role}]: ${c.text}`)
+			.join("\n\n");
+
+		const categoryInstruction = category
+			? `\n\n# カテゴリ\n記事は「${category}」カテゴリに作成されます。`
+			: "";
+
+		const response = await this.generateContentWithRetry({
+			model: this.model,
+			config: {
+				temperature: 0,
+				maxOutputTokens: 8192,
+				systemInstruction:
+					generateArticleInstruction({ now }) + categoryInstruction,
+				responseModalities: [Modality.TEXT],
+			},
+			contents: [
+				{
+					role: "user",
+					parts: [
+						{
+							text: `以下のSlack会話をもとに、esaの記事を作成してください。\n\n# 会話内容\n${conversationText}`,
+						},
+					],
+				},
+			],
+		});
+
+		const jsonText = this.extractJson(response.text || "");
+		return JSON.parse(jsonText);
+	}
+
+	private extractJson(text: string): string {
+		const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
+		if (jsonMatch) {
+			return jsonMatch[1];
+		}
+		const plainJsonMatch = text.match(/\{[\s\S]*\}/);
+		if (plainJsonMatch) {
+			return plainJsonMatch[0];
+		}
+		throw new Error("Failed to extract JSON from response");
 	}
 }
