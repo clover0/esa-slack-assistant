@@ -19,7 +19,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@google/genai": "1.25.0",
+    "@google/genai": "1.38.0",
     "@mastra/core": "0.24.9",
     "@slack/bolt": "4.6.0",
     "axios": "1.13.2",
