@@ -7,6 +7,6 @@
 
 ## 開発環境
 ```
-npm install
-npm run watch
+pnpm install
+pnpm watch
 ```
