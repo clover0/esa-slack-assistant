@@ -71,6 +71,10 @@ describe("AppMentionHandler", () => {
 			answerQuestion: jest
 				.fn()
 				.mockResolvedValue(genChunks(mocks?.answerParts ?? ["A", "B"])),
+			checkDuplicate: jest.fn().mockResolvedValue({ isDuplicate: false }),
+			generateArticle: jest
+				.fn()
+				.mockResolvedValue({ title: "title", body: "body", tags: [] }),
 		};
 
 		const handler = new AppMentionHandler(
