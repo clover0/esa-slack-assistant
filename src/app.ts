@@ -64,6 +64,7 @@ const reactionAddedHandler = new ReactionAddedHandler(
 	esaClient,
 	esaService,
 	geminiAnswerService,
+	process.env.TARGET_REACTION || "esa",
 );
 
 registerListeners(

@@ -9,18 +9,17 @@ import { formatJP } from "../util/date";
 type ReactionAdded = AllMiddlewareArgs &
 	SlackEventMiddlewareArgs<"reaction_added">;
 
-const TARGET_REACTION = "esa";
-
 export class ReactionAddedHandler {
 	constructor(
 		private readonly esaClient: EsaClient,
 		private readonly esaService: EsaService,
 		private readonly answerService: AnswerService,
-	) { }
+		private readonly targetReaction: string = "esa",
+	) {}
 
 	async handle({ client, event, logger, context }: ReactionAdded) {
 		try {
-			if (event.reaction !== TARGET_REACTION) {
+			if (event.reaction !== this.targetReaction) {
 				return;
 			}
 
