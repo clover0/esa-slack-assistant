@@ -3,6 +3,7 @@ import * as dotenv from "dotenv";
 import { EsaClient } from "./externals/esa/client";
 import { AppHomeOpenedHandler } from "./handlers/app-home-opended";
 import { AppMentionHandler } from "./handlers/app-mention";
+import { ReactionAddedHandler } from "./handlers/reaction-added";
 import { buildHttpApp } from "./http/http-app";
 import registerListeners from "./listeners";
 import { handleLogger } from "./middleware";
@@ -59,8 +60,19 @@ const appMentionHandler = new AppMentionHandler(
 	esaService,
 	geminiAnswerService,
 );
+const reactionAddedHandler = new ReactionAddedHandler(
+	esaClient,
+	esaService,
+	geminiAnswerService,
+	process.env.TARGET_REACTION || "esa",
+);
 
-registerListeners(app, appHomeOpenedHandler, appMentionHandler);
+registerListeners(
+	app,
+	appHomeOpenedHandler,
+	appMentionHandler,
+	reactionAddedHandler,
+);
 
 const httpApp = buildHttpApp({
 	state: socketState,

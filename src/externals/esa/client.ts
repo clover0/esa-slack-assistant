@@ -20,6 +20,15 @@ interface GetPostsParams {
 	per_page?: number;
 }
 
+interface CreatePostParams {
+	name: string;
+	body_md: string;
+	tags?: string[];
+	category?: string;
+	wip?: boolean;
+	message?: string;
+}
+
 interface GetPostsResponse {
 	posts: Post[];
 	prev_page: number | null;
@@ -95,6 +104,27 @@ export class EsaClient {
 		try {
 			const response = await this.client.get(apiPath, {
 				params: { max_per_page: esaMaxPostsPerPage, ...params },
+			});
+			return response.data;
+		} catch (err: any) {
+			console.error("esa API error:", err.response?.data || "", err.message);
+			throw err;
+		}
+	}
+
+	async createPost(params: CreatePostParams): Promise<Post> {
+		const apiPath = `/v1/teams/${this.team}/posts`;
+
+		try {
+			const response = await this.client.post(apiPath, {
+				post: {
+					name: params.name,
+					body_md: params.body_md,
+					tags: params.tags ?? [],
+					category: params.category,
+					wip: params.wip ?? true,
+					message: params.message,
+				},
 			});
 			return response.data;
 		} catch (err: any) {
