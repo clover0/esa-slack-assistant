@@ -16,7 +16,7 @@ export class ReactionAddedHandler {
 		private readonly esaClient: EsaClient,
 		private readonly esaService: EsaService,
 		private readonly answerService: AnswerService,
-	) {}
+	) { }
 
 	async handle({ client, event, logger, context }: ReactionAdded) {
 		try {
@@ -44,18 +44,37 @@ export class ReactionAddedHandler {
 				return;
 			}
 
-			const replies = await client.conversations.replies({
+			// リアクションがついたメッセージを単体で取得
+			const history = await client.conversations.history({
 				channel,
-				ts: messageTs,
+				latest: messageTs,
+				inclusive: true,
+				limit: 1,
+			});
+			const targetMessage = history.messages?.[0];
+			if (!targetMessage) {
+				logger.info({ msg: "message not found for reaction" });
+				return;
+			}
+
+			// スレッドの先頭tsを取得（thread_tsがあればスレッド内の返信、なければ単独or先頭メッセージ）
+			const threadTs = targetMessage.thread_ts ?? targetMessage.ts;
+			if (!threadTs) {
+				logger.info({ msg: "could not determine thread ts" });
+				return;
+			}
+
+			// スレッド全体を取得
+			const threadReplies = await client.conversations.replies({
+				channel,
+				ts: threadTs,
 			});
 
-			const messages = replies.messages ?? [];
+			const messages = threadReplies.messages ?? [];
 			if (messages.length === 0) {
 				logger.info({ msg: "no messages found in thread" });
 				return;
 			}
-
-			const threadTs = messages[0].thread_ts ?? messages[0].ts;
 
 			const processingMsg = await client.chat.postMessage({
 				channel,
@@ -180,19 +199,25 @@ export class ReactionAddedHandler {
 			logger.error({ msg: "error handling reaction", error: err });
 
 			if (event.item.type === "message") {
-				const replies = await client.conversations.replies({
-					channel: event.item.channel,
-					ts: event.item.ts,
-				});
-				const threadTs =
-					replies.messages?.[0]?.thread_ts ?? replies.messages?.[0]?.ts;
-
-				if (threadTs) {
-					await client.chat.postMessage({
+				try {
+					const history = await client.conversations.history({
 						channel: event.item.channel,
-						thread_ts: threadTs,
-						text: `記事の作成中にエラーが発生しました。\n${err.message || err}`,
+						latest: event.item.ts,
+						inclusive: true,
+						limit: 1,
 					});
+					const targetMessage = history.messages?.[0];
+					const threadTs = targetMessage?.thread_ts ?? targetMessage?.ts;
+
+					if (threadTs) {
+						await client.chat.postMessage({
+							channel: event.item.channel,
+							thread_ts: threadTs,
+							text: `記事の作成中にエラーが発生しました。\n${err.message || err}`,
+						});
+					}
+				} catch (postErr) {
+					logger.error({ msg: "failed to post error message", error: postErr });
 				}
 			}
 		}
