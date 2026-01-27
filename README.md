@@ -24,7 +24,8 @@ esa Slack Assistant を導入すると、Slack からそのまま記事を検索
 
 
 ## esa API トークンの取得
-1. 「Settings」のAPI設定より「パーソナルアクセストークン v2」を発行します。スコープは `read:post`, `read:category`が必要です。
+「Settings」のAPI設定より「パーソナルアクセストークン v2」を発行します。
+スコープは `read:post`, `read:category`, `write:post`, `read:team`, `read:member`, `read:tag`が必要です。
 
 
 ## アプリのデプロイ
@@ -51,6 +52,8 @@ LOG_LEVEL=info
 
 # json or ""
 LOG_FORMAT=
+
+ESA_AUTOGEN_TRIGGER_REACTION=esa
 ```
 
 ### Google Cloud Run
@@ -65,4 +68,14 @@ Cloud Run のサービスアカウントには VertexAI を利用できるロー
 ### Google Cloud 以外の環境
 VertexAIのAPIキーには対応していないため、[Workload Identity Federation](https://cloud.google.com/iam/docs/workload-identity-federation?hl=ja) を利用します。
 
-...
+## 機能
+
+### esa記事の検索・回答
+導入したSlack Appへのメンションとesaから得たい情報や質問を投稿すると、スレッドに回答が投稿されます。
+
+### Slackでのやりとりから記事を生成する
+Slackスレッド上でやりとりした内容からesa上に記事があるか確認して、なければesa上に記事をWIPで投稿します。
+情報をカバーする記事が存在しているが、Slackの会話が追加情報となりうる場合は追加情報の提案を投稿します。
+
+## 開発者向け
+[DEVELOPERS.md](docs/DEVELOPERS.md)
