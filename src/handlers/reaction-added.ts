@@ -78,7 +78,6 @@ export class ReactionAddedHandler {
 				threadMessages,
 				context.botId,
 			);
-			console.log(threadMessages);
 
 			const conversationSummary = conversation
 				.map((c) => `[${c.role}]: ${c.text}`)
