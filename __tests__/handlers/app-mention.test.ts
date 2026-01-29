@@ -91,6 +91,8 @@ describe("AppMentionHandler", () => {
 		const update = jest.fn();
 		const replies = jest.fn();
 		const info = jest.fn();
+		const chatStreamAppend = jest.fn();
+		const chatStreamStop = jest.fn();
 
 		info.mockResolvedValue({
 			channel: { is_shared: false },
@@ -100,14 +102,27 @@ describe("AppMentionHandler", () => {
 			chat: {
 				postMessage,
 				update,
+				delete: jest.fn(),
 			},
 			conversations: {
 				replies,
 				info,
 			},
+			chatStream: jest.fn().mockReturnValue({
+				append: chatStreamAppend,
+				stop: chatStreamStop,
+			}),
 		} as any;
 
-		return { client, postMessage, update, replies, info };
+		return {
+			client,
+			postMessage,
+			update,
+			replies,
+			info,
+			chatStreamAppend,
+			chatStreamStop,
+		};
 	}
 
 	it("ignores restricted users and posts a notice", async () => {
@@ -234,25 +249,28 @@ describe("AppMentionHandler", () => {
 		});
 
 		it("streams accumulated markdown updates", async () => {
-			const { update } = await handleNewThread({
+			const { handler, answerService } = buildHandler({
 				answerParts: ["foo", "bar"],
 			});
+			const { client, postMessage, chatStreamAppend, chatStreamStop } =
+				buildSlackClient();
+			postMessage.mockResolvedValue({ message: { ts: "200.200" } });
+			const event = { ...baseEvent } as any;
 
-			expect(update).toHaveBeenCalledTimes(2);
-			expect(update.mock.calls[0][0]).toEqual(
+			await handler.handle({ context: {}, client, event, logger } as any);
+
+			expect(chatStreamAppend).toHaveBeenCalledTimes(2);
+			expect(chatStreamAppend.mock.calls[0][0]).toEqual(
 				expect.objectContaining({
-					channel: "C123",
-					ts: "200.200",
 					markdown_text: "foo",
 				}),
 			);
-			expect(update.mock.calls[1][0]).toEqual(
+			expect(chatStreamAppend.mock.calls[1][0]).toEqual(
 				expect.objectContaining({
-					channel: "C123",
-					ts: "200.200",
-					markdown_text: "foobar",
+					markdown_text: "bar",
 				}),
 			);
+			expect(chatStreamStop).toHaveBeenCalledTimes(1);
 		});
 	});
 
@@ -260,7 +278,8 @@ describe("AppMentionHandler", () => {
 		const { handler, answerService } = buildHandler({
 			answerParts: ["x", "y"],
 		});
-		const { client, postMessage, update, replies } = buildSlackClient();
+		const { client, postMessage, replies, chatStreamAppend, chatStreamStop } =
+			buildSlackClient();
 
 		postMessage.mockResolvedValue({ message: { ts: "300.300" } });
 
@@ -305,15 +324,19 @@ describe("AppMentionHandler", () => {
 		const answerQuestionParams = answerService.answerQuestion.mock.calls[0][0];
 		expect(answerQuestionParams.history).toEqual(expectedHistory);
 
-		expect(update).toHaveBeenCalledTimes(2);
-		expect(update.mock.calls[1][0]).toEqual(
-			expect.objectContaining({ ts: "300.300", markdown_text: "xy" }),
+		expect(chatStreamAppend).toHaveBeenCalledTimes(2);
+		expect(chatStreamAppend.mock.calls[0][0]).toEqual(
+			expect.objectContaining({ markdown_text: "x" }),
 		);
+		expect(chatStreamAppend.mock.calls[1][0]).toEqual(
+			expect.objectContaining({ markdown_text: "y" }),
+		);
+		expect(chatStreamStop).toHaveBeenCalledTimes(1);
 	});
 
 	it("posts an error message when an exception occurs", async () => {
 		const { handler, answerService } = buildHandler();
-		const { client, postMessage } = buildSlackClient();
+		const { client, postMessage, chatStreamStop } = buildSlackClient();
 
 		postMessage.mockResolvedValueOnce({ message: { ts: "400.400" } });
 
@@ -330,5 +353,6 @@ describe("AppMentionHandler", () => {
 				text: expect.stringContaining("エラーが発生しました。\n"),
 			}),
 		);
+		expect(chatStreamStop).toHaveBeenCalledTimes(1);
 	});
 });
