@@ -80,6 +80,7 @@ export class AppMentionHandler {
 
 	private async respondToNewThread({ client, event, logger }: AppMention) {
 		const now = new Date();
+
 		const first = await client.chat.postMessage({
 			channel: event.channel,
 			thread_ts: event.ts,
@@ -87,30 +88,37 @@ export class AppMentionHandler {
 			blocks: [loadingMessageBlock()],
 		});
 
-		const mergedPosts = await this.buildMergedPosts({
-			text: event.text,
-			logger: logger,
-			now,
+		const streamer = client.chatStream({
+			channel: event.channel,
+			thread_ts: event.ts,
+			recipient_team_id: event.team,
+			recipient_user_id: event.user,
 		});
 
-		const response = await this.answerService.answerQuestion({
-			posts: mergedPosts,
-			question: event.text,
-			now,
-		});
-		let totalTokenCount: number | undefined;
-		let returnText = "";
-		for await (const message of response) {
-			returnText += message.textDelta ?? "";
-			await client.chat.update({
-				channel: event.channel,
-				ts: first.message?.ts || "",
-				markdown_text: returnText,
+		try {
+			const mergedPosts = await this.buildMergedPosts({
+				text: event.text,
+				logger: logger,
+				now,
 			});
-			totalTokenCount = message.totalTokenCount;
-		}
 
-		return { totalTokenCount };
+			const response = await this.answerService.answerQuestion({
+				posts: mergedPosts,
+				question: event.text,
+				now,
+			});
+			let totalTokenCount: number | undefined;
+			for await (const message of response) {
+				streamer.append({ markdown_text: message.textDelta ?? "" });
+				totalTokenCount = message.totalTokenCount;
+			}
+
+			await client.chat.delete({ channel: event.channel, ts: first.ts ?? "" });
+
+			return { totalTokenCount };
+		} finally {
+			streamer.stop();
+		}
 	}
 
 	private async respondInThread({
@@ -120,61 +128,67 @@ export class AppMentionHandler {
 		context,
 	}: AppMention) {
 		const now = new Date();
-		const msg = await client.chat.postMessage({
+		const first = await client.chat.postMessage({
 			channel: event.channel,
 			thread_ts: event.thread_ts,
 			text: "記事を探しています...:hourglass_flowing_sand:",
 			blocks: [loadingMessageBlock()],
 		});
 
-		const replies = await client.conversations.replies({
+		const streamer = client.chatStream({
 			channel: event.channel,
-			ts: event.thread_ts ? event.thread_ts : "",
+			thread_ts: event.ts,
+			recipient_team_id: event.team,
+			recipient_user_id: event.user,
 		});
 
-		const replyTexts: ChatHistory[] = (replies.messages ?? []).map(
-			(m): ChatHistory => {
-				const timestamp = m.ts
-					? formatJP(new Date(parseFloat(m.ts) * 1000))
-					: "unknown time";
-				const isAssistant = context.botId
-					? m.bot_id === context.botId
-					: Boolean(m.bot_id);
-				return {
-					role: isAssistant ? "assistant" : "user",
-					text: m.text ? `${m.text}\nfrom ${m.user} at ${timestamp}` : "",
-				};
-			},
-		);
-
-		const mergedPosts = await this.buildMergedPosts({
-			text: event.text,
-			logger: logger,
-			history: replyTexts,
-			now: now,
-		});
-
-		const response = await this.answerService.answerQuestion({
-			posts: mergedPosts,
-			question: event.text,
-			history: replyTexts,
-			now,
-		});
-
-		let totalTokenCount: number | undefined;
-		let returnText = "";
-
-		for await (const message of response) {
-			returnText += message.textDelta ?? "";
-			await client.chat.update({
+		try {
+			const replies = await client.conversations.replies({
 				channel: event.channel,
-				ts: msg.message?.ts || "",
-				markdown_text: returnText,
+				ts: event.thread_ts ? event.thread_ts : "",
 			});
-			totalTokenCount = message.totalTokenCount;
-		}
 
-		return { totalTokenCount };
+			const replyTexts: ChatHistory[] = (replies.messages ?? []).map(
+				(m): ChatHistory => {
+					const timestamp = m.ts
+						? formatJP(new Date(parseFloat(m.ts) * 1000))
+						: "unknown time";
+					const isAssistant = context.botId
+						? m.bot_id === context.botId
+						: Boolean(m.bot_id);
+					return {
+						role: isAssistant ? "assistant" : "user",
+						text: m.text ? `${m.text}\nfrom ${m.user} at ${timestamp}` : "",
+					};
+				},
+			);
+
+			const mergedPosts = await this.buildMergedPosts({
+				text: event.text,
+				logger: logger,
+				history: replyTexts,
+				now: now,
+			});
+
+			const response = await this.answerService.answerQuestion({
+				posts: mergedPosts,
+				question: event.text,
+				history: replyTexts,
+				now,
+			});
+
+			let totalTokenCount: number | undefined;
+			for await (const message of response) {
+				streamer.append({ markdown_text: message.textDelta ?? "" });
+				totalTokenCount = message.totalTokenCount;
+			}
+
+			await client.chat.delete({ channel: event.channel, ts: first.ts ?? "" });
+
+			return { totalTokenCount };
+		} finally {
+			streamer.stop();
+		}
 	}
 
 	private async buildMergedPosts({
