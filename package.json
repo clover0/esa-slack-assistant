@@ -30,7 +30,7 @@
     "@slack/types": "2.19.0",
     "@types/express": "5.0.6",
     "@types/jest": "30.0.0",
-    "@types/node": "24.5.2",
+    "@types/node": "24.10.9",
     "jest": "30.2.0",
     "nodemon": "3.1.10",
     "ts-jest": "29.4.6",
@@ -38,6 +38,6 @@
     "typescript": "5.9.3"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=24.13.0"
   }
 }
