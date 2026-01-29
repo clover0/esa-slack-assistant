@@ -39,39 +39,26 @@ export class ReactionAddedHandler {
 
 			const channelInfo = await client.conversations.info({ channel });
 			if (channelInfo.channel?.is_shared) {
-				logger.info({ msg: "ignoring reaction from externally shared channel" });
+				logger.info({
+					msg: "ignoring reaction from externally shared channel",
+				});
 				return;
 			}
 
-			// リアクションがついたメッセージを単体で取得
-			const history = await client.conversations.history({
-				channel,
-				latest: messageTs,
-				inclusive: true,
-				limit: 1,
-			});
-			const targetMessage = history.messages?.[0];
-			if (!targetMessage) {
-				logger.info({ msg: "message not found for reaction" });
-				return;
-			}
-
-			// スレッドの先頭tsを取得（thread_tsがあればスレッド内の返信、なければ単独or先頭メッセージ）
-			const threadTs = targetMessage.thread_ts ?? targetMessage.ts;
-			if (!threadTs) {
-				logger.info({ msg: "could not determine thread ts" });
-				return;
-			}
-
-			// スレッド全体を取得
 			const threadReplies = await client.conversations.replies({
 				channel,
-				ts: threadTs,
+				ts: messageTs,
 			});
 
 			const messages = threadReplies.messages ?? [];
 			if (messages.length === 0) {
-				logger.info({ msg: "no messages found in thread" });
+				logger.info({ msg: "no messages found for reaction thread" });
+				return;
+			}
+
+			const threadTs = messages[0].thread_ts ?? messages[0].ts;
+			if (!threadTs) {
+				logger.info({ msg: "could not determine thread ts" });
 				return;
 			}
 
@@ -81,7 +68,16 @@ export class ReactionAddedHandler {
 				text: "記事を作成中です...:writing_hand:",
 			});
 
-			const conversation = this.buildConversation(messages, context.botId);
+			const replies = await client.conversations.replies({
+				channel,
+				ts: threadTs,
+			});
+
+			const threadMessages = replies.messages ?? [];
+			const conversation = this.buildConversation(
+				threadMessages,
+				context.botId,
+			);
 
 			const conversationSummary = conversation
 				.map((c) => `[${c.role}]: ${c.text}`)
@@ -199,14 +195,12 @@ export class ReactionAddedHandler {
 
 			if (event.item.type === "message") {
 				try {
-					const history = await client.conversations.history({
+					const threadReplies = await client.conversations.replies({
 						channel: event.item.channel,
-						latest: event.item.ts,
-						inclusive: true,
-						limit: 1,
+						ts: event.item.ts,
 					});
-					const targetMessage = history.messages?.[0];
-					const threadTs = targetMessage?.thread_ts ?? targetMessage?.ts;
+					const messages = threadReplies.messages ?? [];
+					const threadTs = messages[0]?.thread_ts ?? messages[0]?.ts;
 
 					if (threadTs) {
 						await client.chat.postMessage({
@@ -222,10 +216,7 @@ export class ReactionAddedHandler {
 		}
 	}
 
-	private buildConversation(
-		messages: any[],
-		botId?: string,
-	): ChatHistory[] {
+	private buildConversation(messages: any[], botId?: string): ChatHistory[] {
 		return messages.map((m): ChatHistory => {
 			const timestamp = m.ts
 				? formatJP(new Date(parseFloat(m.ts) * 1000))
