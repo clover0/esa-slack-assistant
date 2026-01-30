@@ -49,6 +49,7 @@ export class JSONConsoleLogger implements Logger {
 			console.debug(
 				JSON.stringify({
 					level: LogLevel.DEBUG,
+					time: new Date().toISOString(),
 					name: this.name,
 					content: msg.length === 1 ? msg[0] : msg,
 				}),
@@ -65,6 +66,7 @@ export class JSONConsoleLogger implements Logger {
 			console.info(
 				JSON.stringify({
 					level: LogLevel.INFO,
+					time: new Date().toISOString(),
 					name: this.name,
 					content: msg.length === 1 ? msg[0] : msg,
 				}),
@@ -81,6 +83,7 @@ export class JSONConsoleLogger implements Logger {
 			console.warn(
 				JSON.stringify({
 					level: LogLevel.WARN,
+					time: new Date().toISOString(),
 					name: this.name,
 					content: msg.length === 1 ? msg[0] : msg,
 				}),
@@ -102,6 +105,7 @@ export class JSONConsoleLogger implements Logger {
 			console.error(
 				JSON.stringify({
 					level: LogLevel.ERROR,
+					time: new Date().toISOString(),
 					name: this.name,
 					content: msg.length === 1 ? msg[0] : msg,
 				}),
