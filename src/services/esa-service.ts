@@ -27,7 +27,6 @@ export class EsaService {
 
 	async searchPostsByKeywordsIncludeWip(keywords: string[]) {
 		const query = this.buildKeywordsQuery(keywords);
-		console.log(query);
 		const response = await this.esa.getPosts({
 			q: `(${query}) -Archive`,
 		});
