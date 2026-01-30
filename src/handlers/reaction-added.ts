@@ -27,6 +27,27 @@ export class ReactionAddedHandler {
 				return;
 			}
 
+			try {
+				const userInfo = await client.users.info({ user: event.user });
+				if (
+					userInfo.user?.is_restricted ||
+					userInfo.user?.is_ultra_restricted
+				) {
+					logger.info({
+						msg: "ignoring reaction from restricted user",
+						user: event.user,
+					});
+					return;
+				}
+			} catch (err) {
+				logger.warn({
+					msg: "failed to fetch user info; skipping reaction",
+					user: event.user,
+					error: err,
+				});
+				return;
+			}
+
 			const channel = event.item.channel;
 			const messageTs = event.item.ts;
 
