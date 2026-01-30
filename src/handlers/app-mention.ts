@@ -109,7 +109,7 @@ export class AppMentionHandler {
 			});
 			let totalTokenCount: number | undefined;
 			for await (const message of response) {
-				streamer.append({ markdown_text: message.textDelta ?? "" });
+				await streamer.append({ markdown_text: message.textDelta ?? "" });
 				totalTokenCount = message.totalTokenCount;
 			}
 
@@ -117,7 +117,7 @@ export class AppMentionHandler {
 
 			return { totalTokenCount };
 		} finally {
-			streamer.stop();
+			await streamer.stop();
 		}
 	}
 
@@ -179,7 +179,7 @@ export class AppMentionHandler {
 
 			let totalTokenCount: number | undefined;
 			for await (const message of response) {
-				streamer.append({ markdown_text: message.textDelta ?? "" });
+				await streamer.append({ markdown_text: message.textDelta ?? "" });
 				totalTokenCount = message.totalTokenCount;
 			}
 
@@ -187,7 +187,7 @@ export class AppMentionHandler {
 
 			return { totalTokenCount };
 		} finally {
-			streamer.stop();
+			await streamer.stop();
 		}
 	}
 
