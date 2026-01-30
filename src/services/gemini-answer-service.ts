@@ -15,8 +15,8 @@ import type {
 	CheckDuplicateParams,
 	CheckDuplicateResult,
 	GenerateArticleParams,
-	GenerateKeywordsParams,
 	GeneratedArticle,
+	GenerateKeywordsParams,
 	SelectCategoryParams,
 } from "./answer-service";
 
@@ -73,6 +73,7 @@ ${userQuestion}
 * 1つのキーワードは2文字以上
 * キーワードは記号やスペースを使わずに出力する
 * 質問から類推できるキーワード、カテゴリ一覧から類推できるキーワードを使う
+* アルファベットのキーワードは、ユーザーの質問から推測できる一般的な表記（大文字・小文字を区別）で生成する。例えば github から GitHub を生成する。
 * 出力はキーワードごとに1行ごとに出力する
 `;
 
