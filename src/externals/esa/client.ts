@@ -76,7 +76,7 @@ export class EsaClient {
 
 	async getCategories(
 		params: GetCategoryParams,
-		option?: { excludeArchive: boolean },
+		option?: { includeArchive?: boolean },
 	): Promise<GetCategoryResponse> {
 		const apiPath = `/v1/teams/${this.team}/categories/paths`;
 
@@ -84,7 +84,8 @@ export class EsaClient {
 			const response = await this.client.get(apiPath, {
 				params: { ...params },
 			});
-			if (option?.excludeArchive) {
+			const includeArchive = option?.includeArchive ?? false;
+			if (!includeArchive) {
 				response.data.categories = (
 					response.data as GetCategoryResponse
 				).categories.filter((c: { path: string }) => {

@@ -106,10 +106,7 @@ export class ReactionAddedHandler {
 
 			const now = new Date();
 
-			const { categories } = await this.esaClient.getCategories(
-				{},
-				{ excludeArchive: true },
-			);
+			const { categories } = await this.esaClient.getCategories({});
 
 			const categoryWithCounts = categories
 				.filter((c) => !!c)
@@ -134,9 +131,14 @@ export class ReactionAddedHandler {
 				categories: targetCategories.join(","),
 			});
 
+			logger.debug({
+				msg: "generated keywords for article",
+				keywords: searchKeywords.join(","),
+			});
+
 			const [collectedPosts, searchedPosts] = await Promise.all([
 				this.esaService.collectPostsByCategories(targetCategories),
-				this.esaService.searchPostsByKeywords(searchKeywords),
+				this.esaService.searchPostsByKeywordsIncludeWip(searchKeywords),
 			]);
 
 			const existingPosts = merge(
@@ -153,8 +155,13 @@ export class ReactionAddedHandler {
 				now,
 			});
 
-			if (duplicateResult.isDuplicate && duplicateResult.matchedPost) {
-				let responseText = `この記事がカバーしてそうです: ${duplicateResult.matchedPost.url}`;
+			if (
+				duplicateResult.isDuplicate &&
+				duplicateResult.matchedPosts &&
+				duplicateResult.matchedPosts.length > 0
+			) {
+				const urls = duplicateResult.matchedPosts.map((post) => post.url);
+				let responseText = `この記事がカバーしてそうです:\n${urls.map((url) => `- ${url}`).join("\n")}`;
 
 				if (
 					duplicateResult.additionalInfo &&
@@ -165,13 +172,15 @@ export class ReactionAddedHandler {
 
 				await client.chat.update({
 					channel,
-					ts: processingMsg.ts!,
+					ts: processingMsg.ts ?? "",
 					text: responseText,
 				});
 
 				logger.info({
 					msg: "duplicate found",
-					matchedPostId: duplicateResult.matchedPost.number,
+					matchedPostIds: duplicateResult.matchedPosts.map(
+						(post) => post.number,
+					),
 				});
 				return;
 			}
@@ -202,8 +211,9 @@ export class ReactionAddedHandler {
 
 			await client.chat.update({
 				channel,
-				ts: processingMsg.ts!,
-				text: `下書きを作成しました: ${createdPost.url}`,
+				ts: processingMsg.ts ?? "",
+				text: `下書きを作成しました: ${createdPost.url}
+内容を確認して修正し、「Ship It!」するか、不要であれば削除しましょう。`,
 			});
 
 			logger.info({
