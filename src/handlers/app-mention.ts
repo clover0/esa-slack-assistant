@@ -202,10 +202,7 @@ export class AppMentionHandler {
 		history?: ChatHistory[];
 		now: Date;
 	}): Promise<Post[]> {
-		const { categories } = await this.esaClient.getCategories(
-			{},
-			{ excludeArchive: true },
-		);
+		const { categories } = await this.esaClient.getCategories({});
 
 		const categoryWithCounts = categories
 			.filter((c) => !!c)

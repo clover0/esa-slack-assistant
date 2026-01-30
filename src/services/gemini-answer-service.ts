@@ -3,6 +3,7 @@ import {
 	FinishReason,
 	GoogleGenAI,
 	Modality,
+	Type,
 } from "@google/genai";
 import type { ChatHistory } from "../dto/chat-history";
 import type { Chunk } from "../dto/chunk";
@@ -32,18 +33,8 @@ ${formatJP(now)}
 2. esa に存在するカテゴリの中から、関連性の高いカテゴリを最大3つまで特定する
 
 # 出力ルール
-* 出力はカテゴリ名のみ
-* 各カテゴリを改行で区切る
-* 余計なテキストや説明は出力しない
 * 出力数は1〜3個まで
 * カテゴリ一覧には、カテゴリ名とそのカテゴリに属する記事数がスペース区切りで並んでいます。
-
-# 出力例
-\`\`\`
-category
-category1/subcategory
-category2/sub1/sub2
-\`\`\`
 `;
 };
 
@@ -69,12 +60,9 @@ ${userQuestion}
 2. 記事の検索で利用するためのキーワードを8個生成する。
 
 # 出力ルール
-* 出力はキーワードのみ
 * 1つのキーワードは2文字以上
-* キーワードは記号やスペースを使わずに出力する
 * 質問から類推できるキーワード、カテゴリ一覧から類推できるキーワードを使う
-* アルファベットのキーワードは、ユーザーの質問から推測できる一般的な表記（大文字・小文字を区別）で生成する。例えば github から GitHub を生成する。
-* 出力はキーワードごとに1行ごとに出力する
+* アルファベットのキーワードは、ユーザーの質問から推測できる一般的な表記（大文字・小文字を区別）で生成する。例えば github から GitHub を生成する
 `;
 
 const answerQuestionInstruction = ({ now }: { now: Date }) => {
@@ -138,17 +126,8 @@ ${formatJP(now)}
 * 会話の主要なトピックが既存記事で十分にカバーされている場合のみ「重複あり」と判定
 * 部分的に関連しているだけでは「重複あり」としない
 * 既存記事に書かれていない新しい情報が会話に含まれている場合、その情報を追加情報として抽出する
-
-# 出力形式（JSON）
-\`\`\`json
-{
-  "isDuplicate": true または false,
-  "matchedPostId": 重複ありの場合は記事のid（数値）、なければnull,
-  "additionalInfo": ["追加情報1", "追加情報2"] または []
-}
-\`\`\`
-* 必ず上記のJSON形式のみを出力すること
-* 余計なテキストや説明は出力しない
+* 重複候補が複数ある場合は全て挙げる
+* 重複あり/なしの判断理由を簡潔にまとめる
 `;
 };
 
@@ -170,17 +149,6 @@ ${formatJP(now)}
 * 質問と回答の形式が適切な場合はQ&A形式で記述する
 * 手順や設定方法の場合は番号付きリストで記述する
 * タグは内容に関連するキーワードを3〜5個程度抽出する
-
-# 出力形式（JSON）
-\`\`\`json
-{
-  "title": "記事のタイトル",
-  "body": "マークダウン形式の本文",
-  "tags": ["タグ1", "タグ2", "タグ3"]
-}
-\`\`\`
-* 必ず上記のJSON形式のみを出力すること
-* 余計なテキストや説明は出力しない
 `;
 };
 
@@ -216,11 +184,26 @@ export class GeminiAnswerService implements AnswerService {
 					selectCategoryInstruction({ now: now ?? new Date() }) +
 					this.buildCategorySection(categories),
 				responseModalities: [Modality.TEXT],
+				responseMimeType: "application/json",
+				responseSchema: {
+					type: Type.ARRAY,
+					description: "関連するカテゴリ名の一覧",
+					items: { type: Type.STRING },
+					minItems: "1",
+					maxItems: "3",
+				},
 			},
 			contents: contents,
 		});
 
-		return this.parseLines(response.text || "");
+		const jsonText = response.text?.trim();
+		if (!jsonText) {
+			throw new Error("Empty JSON response from Gemini");
+		}
+		const result = JSON.parse(jsonText);
+		return Array.isArray(result)
+			? result.filter((item) => typeof item === "string")
+			: [];
 	}
 
 	private buildCategorySection(categories: string[]) {
@@ -248,11 +231,26 @@ ${categories.join("\n")}
 				maxOutputTokens: 2048,
 				systemInstruction: instruction,
 				responseModalities: [Modality.TEXT],
+				responseMimeType: "application/json",
+				responseSchema: {
+					type: Type.ARRAY,
+					description: "検索に使うキーワード一覧",
+					items: { type: Type.STRING },
+					minItems: "8",
+					maxItems: "8",
+				},
 			},
 			contents: contents,
 		});
 
-		return this.parseLines(response.text || "");
+		const jsonText = response.text?.trim();
+		if (!jsonText) {
+			throw new Error("Empty JSON response from Gemini");
+		}
+		const result = JSON.parse(jsonText);
+		return Array.isArray(result)
+			? result.filter((item) => typeof item === "string")
+			: [];
 	}
 
 	private buildPostsSection(posts: Post[]) {
@@ -343,13 +341,6 @@ ${documents}
 		});
 	}
 
-	private parseLines(text: string): string[] {
-		return text
-			.split("\n")
-			.map((line) => line.trim())
-			.filter((line) => line.length > 0);
-	}
-
 	private buildContents(
 		question: string,
 		history?: ChatHistory[],
@@ -391,6 +382,36 @@ ${documents}
 				systemInstruction:
 					checkDuplicateInstruction({ now }) + this.buildPostsSection(posts),
 				responseModalities: [Modality.TEXT],
+				responseMimeType: "application/json",
+				responseSchema: {
+					type: Type.OBJECT,
+					properties: {
+						isDuplicate: {
+							type: Type.BOOLEAN,
+							description: "会話内容が既存記事で十分にカバーされているか",
+						},
+						matchedPostIds: {
+							type: Type.ARRAY,
+							description: "重複ありの場合の記事ID一覧。重複なしは空配列",
+							items: { type: Type.INTEGER },
+						},
+						additionalInfo: {
+							type: Type.ARRAY,
+							description: "既存記事に含まれない追加情報。なければ空配列",
+							items: { type: Type.STRING },
+						},
+						reason: {
+							type: Type.STRING,
+							description: "重複あり/なしと判断した理由",
+						},
+					},
+					required: [
+						"isDuplicate",
+						"matchedPostIds",
+						"additionalInfo",
+						"reason",
+					],
+				},
 			},
 			contents: [
 				{
@@ -404,17 +425,33 @@ ${documents}
 			],
 		});
 
-		const jsonText = this.extractJson(response.text || "");
+		const jsonText = response.text?.trim();
+		if (!jsonText) {
+			throw new Error("Empty JSON response from Gemini");
+		}
 		const result = JSON.parse(jsonText);
+		console.log("Gemini response:", result);
 
-		const matchedPost = result.matchedPostId
-			? posts.find((p) => p.number === result.matchedPostId)
-			: undefined;
+		const matchedPostIds = Array.isArray(result.matchedPostIds)
+			? result.matchedPostIds
+			: [];
+		const matchedPostIdSet = new Set(
+			matchedPostIds
+				.filter((id: unknown) => typeof id === "number")
+				.map((id: number) => id),
+		);
+		const matchedPosts =
+			matchedPostIdSet.size > 0
+				? posts.filter((p) => matchedPostIdSet.has(p.number))
+				: undefined;
 
 		return {
 			isDuplicate: result.isDuplicate,
-			matchedPost,
-			additionalInfo: result.additionalInfo || [],
+			matchedPosts,
+			additionalInfo: Array.isArray(result.additionalInfo)
+				? result.additionalInfo
+				: [],
+			reason: result.reason,
 		};
 	}
 
@@ -435,10 +472,30 @@ ${documents}
 			model: this.model,
 			config: {
 				temperature: 0,
-				maxOutputTokens: 8192,
+				maxOutputTokens: 50000,
 				systemInstruction:
 					generateArticleInstruction({ now }) + categoryInstruction,
 				responseModalities: [Modality.TEXT],
+				responseMimeType: "application/json",
+				responseSchema: {
+					type: Type.OBJECT,
+					properties: {
+						title: {
+							type: Type.STRING,
+							description: "記事のタイトル",
+						},
+						body: {
+							type: Type.STRING,
+							description: "マークダウン形式の本文",
+						},
+						tags: {
+							type: Type.ARRAY,
+							description: "記事に付与するタグ一覧",
+							items: { type: Type.STRING },
+						},
+					},
+					required: ["title", "body", "tags"],
+				},
 			},
 			contents: [
 				{
@@ -452,19 +509,11 @@ ${documents}
 			],
 		});
 
-		const jsonText = this.extractJson(response.text || "");
-		return JSON.parse(jsonText);
-	}
+		const jsonText = response.text?.trim();
+		if (!jsonText) {
+			throw new Error("Empty JSON response from Gemini");
+		}
 
-	private extractJson(text: string): string {
-		const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
-		if (jsonMatch) {
-			return jsonMatch[1];
-		}
-		const plainJsonMatch = text.match(/\{[\s\S]*\}/);
-		if (plainJsonMatch) {
-			return plainJsonMatch[0];
-		}
-		throw new Error("Failed to extract JSON from response");
+		return JSON.parse(jsonText);
 	}
 }

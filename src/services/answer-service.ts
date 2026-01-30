@@ -31,8 +31,9 @@ export type CheckDuplicateParams = {
 
 export type CheckDuplicateResult = {
 	isDuplicate: boolean;
-	matchedPost?: Post;
+	matchedPosts?: Post[];
 	additionalInfo?: string[];
+	reason: string;
 };
 
 export type GenerateArticleParams = {

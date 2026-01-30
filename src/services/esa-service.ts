@@ -19,7 +19,18 @@ export class EsaService {
 
 	async searchPostsByKeywords(keywords: string[]) {
 		const query = this.buildKeywordsQuery(keywords);
-		const response = await this.esa.getPosts({ q: `${query} wip:false` });
+		const response = await this.esa.getPosts({
+			q: `(${query}) wip:false -Archive`,
+		});
+		return response.posts;
+	}
+
+	async searchPostsByKeywordsIncludeWip(keywords: string[]) {
+		const query = this.buildKeywordsQuery(keywords);
+		console.log(query);
+		const response = await this.esa.getPosts({
+			q: `(${query}) -Archive`,
+		});
 		return response.posts;
 	}
 
