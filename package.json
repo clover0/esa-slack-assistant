@@ -9,7 +9,7 @@
     "watch": "nodemon --exec ts-node src/app.ts",
     "lint": "biome lint ./src",
     "lint-fix": "biome lint fix --write ./src",
-    "check-fix": "biome check --write ./src",
+    "format": "biome check --write ./src",
     "test": "jest",
     "mastra:dev": "mastra dev",
     "mastra:build": "mastra build",
