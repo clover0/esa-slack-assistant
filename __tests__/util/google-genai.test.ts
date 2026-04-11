@@ -6,15 +6,15 @@ function apiError(status: number, message = `status ${status}`) {
 
 describe("retry", () => {
 	beforeEach(() => {
-		jest.spyOn(mod, "sleep").mockResolvedValue();
+		vi.spyOn(mod, "sleep").mockResolvedValue();
 	});
 
 	afterEach(() => {
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	it("returns immediately when fn resolves on first attempt", async () => {
-		const fn = jest.fn().mockResolvedValue("ok");
+		const fn = vi.fn().mockResolvedValue("ok");
 
 		const result = await mod.retry({ fn, maxRetries: 3, initialDelayMs: 1 });
 
@@ -24,8 +24,8 @@ describe("retry", () => {
 	});
 
 	it("retries on 500 and succeeds before maxRetries", async () => {
-		const fn = jest
-			.fn<Promise<string>, []>()
+		const fn = vi
+			.fn<() => Promise<string>>()
 			.mockRejectedValueOnce(apiError(500))
 			.mockRejectedValueOnce(apiError(500))
 			.mockResolvedValue("done");
@@ -37,7 +37,7 @@ describe("retry", () => {
 	});
 
 	it("throws after exceeding maxRetries on retryable errors", async () => {
-		const fn = jest.fn().mockRejectedValue(apiError(500));
+		const fn = vi.fn().mockRejectedValue(apiError(500));
 
 		await expect(
 			mod.retry({ fn, maxRetries: 2, initialDelayMs: 1 }),
@@ -48,7 +48,7 @@ describe("retry", () => {
 
 	it("does not retry for non-retryable 4xx (e.g., 400)", async () => {
 		const err = apiError(400);
-		const fn = jest.fn().mockRejectedValue(err);
+		const fn = vi.fn().mockRejectedValue(err);
 
 		await expect(
 			mod.retry({ fn, maxRetries: 5, initialDelayMs: 1 }),
@@ -60,7 +60,7 @@ describe("retry", () => {
 	it("does not retry for errors without status", async () => {
 		const err = new Error("boom");
 
-		const fn = jest.fn().mockRejectedValue(err);
+		const fn = vi.fn().mockRejectedValue(err);
 		await expect(
 			mod.retry({ fn, maxRetries: 5, initialDelayMs: 1 }),
 		).rejects.toBe(err);

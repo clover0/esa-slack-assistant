@@ -4,6 +4,7 @@ import { AppMentionHandler } from "../../src/handlers/app-mention";
 import type { AnswerService } from "../../src/services/answer-service";
 import { EsaService } from "../../src/services/esa-service";
 import { loadingMessageBlock } from "../../src/ui/app-mention";
+import type { Mocked } from "vitest";
 
 async function* genChunks(parts: string[]) {
 	for (const p of parts) {
@@ -27,9 +28,9 @@ function makePosts(nums: number[]): Post[] {
 
 describe("AppMentionHandler", () => {
 	const logger = {
-		info: jest.fn(),
-		debug: jest.fn(),
-		error: jest.fn(),
+		info: vi.fn(),
+		debug: vi.fn(),
+		error: vi.fn(),
 	} as any;
 
 	const baseEvent = {
@@ -48,8 +49,8 @@ describe("AppMentionHandler", () => {
 			answerParts: string[];
 		}>,
 	) {
-		const esaClient: jest.Mocked<Pick<EsaClient, "getCategories" | any>> = {
-			getCategories: jest.fn().mockResolvedValue({
+		const esaClient: Mocked<Pick<EsaClient, "getCategories">> = {
+			getCategories: vi.fn().mockResolvedValue({
 				categories: mocks?.categories ?? [
 					{ path: "Category1", posts: 10 },
 					{ path: "Category2", posts: 5 },
@@ -58,24 +59,24 @@ describe("AppMentionHandler", () => {
 		};
 
 		const esaService = new EsaService(esaClient as any);
-		jest
+		vi
 			.spyOn(esaService, "collectPostsByCategories")
 			.mockResolvedValue(mocks?.collected ?? makePosts([1, 2]));
-		jest
+		vi
 			.spyOn(esaService, "searchPostsByKeywords")
 			.mockResolvedValue(mocks?.searched ?? makePosts([2, 3]));
 
-		const answerService: jest.Mocked<AnswerService> = {
-			selectCategory: jest.fn().mockResolvedValue(["Category1"]),
-			generateKeywords: jest.fn().mockResolvedValue(["kw1", "kw2"]),
-			answerQuestion: jest
+		const answerService: Mocked<AnswerService> = {
+			selectCategory: vi.fn().mockResolvedValue(["Category1"]),
+			generateKeywords: vi.fn().mockResolvedValue(["kw1", "kw2"]),
+			answerQuestion: vi
 				.fn()
 				.mockResolvedValue(genChunks(mocks?.answerParts ?? ["A", "B"])),
-			checkDuplicate: jest.fn().mockResolvedValue({
+			checkDuplicate: vi.fn().mockResolvedValue({
 				isDuplicate: false,
 				reason: "reason",
 			}),
-			generateArticle: jest
+			generateArticle: vi
 				.fn()
 				.mockResolvedValue({ title: "title", body: "body", tags: [] }),
 		};
@@ -90,12 +91,12 @@ describe("AppMentionHandler", () => {
 	}
 
 	function buildSlackClient() {
-		const postMessage = jest.fn();
-		const update = jest.fn();
-		const replies = jest.fn();
-		const info = jest.fn();
-		const chatStreamAppend = jest.fn();
-		const chatStreamStop = jest.fn();
+		const postMessage = vi.fn();
+		const update = vi.fn();
+		const replies = vi.fn();
+		const info = vi.fn();
+		const chatStreamAppend = vi.fn();
+		const chatStreamStop = vi.fn();
 
 		info.mockResolvedValue({
 			channel: { is_shared: false },
@@ -105,13 +106,13 @@ describe("AppMentionHandler", () => {
 			chat: {
 				postMessage,
 				update,
-				delete: jest.fn(),
+				delete: vi.fn(),
 			},
 			conversations: {
 				replies,
 				info,
 			},
-			chatStream: jest.fn().mockReturnValue({
+			chatStream: vi.fn().mockReturnValue({
 				append: chatStreamAppend,
 				stop: chatStreamStop,
 			}),

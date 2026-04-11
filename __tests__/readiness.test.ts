@@ -9,12 +9,12 @@ import {
 
 describe("readiness utilities", () => {
 	afterEach(() => {
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	it("createInitialSocketState returns a disconnected baseline state", () => {
 		const now = 1700000000000;
-		jest.spyOn(Date, "now").mockReturnValue(now);
+		vi.spyOn(Date, "now").mockReturnValue(now);
 
 		const state = createInitialSocketState();
 
@@ -31,7 +31,7 @@ describe("readiness utilities", () => {
 			lastDisconnectedAt: 1700000004000,
 			consecutiveFailures: 3,
 		};
-		jest.spyOn(Date, "now").mockReturnValue(connectedAt);
+		vi.spyOn(Date, "now").mockReturnValue(connectedAt);
 
 		markConnected(state);
 
@@ -49,7 +49,7 @@ describe("readiness utilities", () => {
 			lastDisconnectedAt: 1700000008000,
 			consecutiveFailures: 2,
 		};
-		jest.spyOn(Date, "now").mockReturnValue(disconnectedAt);
+		vi.spyOn(Date, "now").mockReturnValue(disconnectedAt);
 
 		markDisconnected(state);
 

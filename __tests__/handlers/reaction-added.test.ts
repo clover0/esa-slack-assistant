@@ -2,13 +2,14 @@ import type { EsaClient } from "../../src/externals/esa/client";
 import { ReactionAddedHandler } from "../../src/handlers/reaction-added";
 import type { AnswerService } from "../../src/services/answer-service";
 import { EsaService } from "../../src/services/esa-service";
+import type { Mocked } from "vitest";
 
 describe("ReactionAddedHandler", () => {
 	const logger = {
-		info: jest.fn(),
-		debug: jest.fn(),
-		error: jest.fn(),
-		warn: jest.fn(),
+		info: vi.fn(),
+		debug: vi.fn(),
+		error: vi.fn(),
+		warn: vi.fn(),
 	} as any;
 
 	const baseEvent = {
@@ -23,26 +24,24 @@ describe("ReactionAddedHandler", () => {
 	} as any;
 
 	function buildHandler() {
-		const esaClient: jest.Mocked<
-			Pick<EsaClient, "getCategories" | "createPost">
-		> = {
-			getCategories: jest.fn(),
-			createPost: jest.fn(),
+		const esaClient: Mocked<Pick<EsaClient, "getCategories" | "createPost">> = {
+			getCategories: vi.fn(),
+			createPost: vi.fn(),
 		};
 
 		const esaService = new EsaService(esaClient as any);
-		jest.spyOn(esaService, "collectPostsByCategories").mockResolvedValue([]);
-		jest.spyOn(esaService, "searchPostsByKeywords").mockResolvedValue([]);
+		vi.spyOn(esaService, "collectPostsByCategories").mockResolvedValue([]);
+		vi.spyOn(esaService, "searchPostsByKeywords").mockResolvedValue([]);
 
-		const answerService: jest.Mocked<AnswerService> = {
-			selectCategory: jest.fn().mockResolvedValue([]),
-			generateKeywords: jest.fn().mockResolvedValue([]),
-			answerQuestion: jest.fn(),
-			checkDuplicate: jest.fn().mockResolvedValue({
+		const answerService: Mocked<AnswerService> = {
+			selectCategory: vi.fn().mockResolvedValue([]),
+			generateKeywords: vi.fn().mockResolvedValue([]),
+			answerQuestion: vi.fn(),
+			checkDuplicate: vi.fn().mockResolvedValue({
 				isDuplicate: false,
 				reason: "reason",
 			}),
-			generateArticle: jest
+			generateArticle: vi
 				.fn()
 				.mockResolvedValue({ title: "title", body: "body", tags: [] }),
 		};
@@ -58,11 +57,11 @@ describe("ReactionAddedHandler", () => {
 	}
 
 	function buildSlackClient() {
-		const usersInfo = jest.fn();
-		const conversationsInfo = jest.fn();
-		const replies = jest.fn();
-		const postMessage = jest.fn();
-		const update = jest.fn();
+		const usersInfo = vi.fn();
+		const conversationsInfo = vi.fn();
+		const replies = vi.fn();
+		const postMessage = vi.fn();
+		const update = vi.fn();
 
 		const client = {
 			users: {

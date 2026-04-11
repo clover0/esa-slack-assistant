@@ -7,35 +7,40 @@ import { startSlackConnectionMonitor } from "../../src/services/slack-connection
 
 describe("slack-connection-monitor", () => {
 	beforeEach(() => {
-		jest.useFakeTimers();
+		vi.useFakeTimers();
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
-		jest.restoreAllMocks();
+		vi.useRealTimers();
+		vi.restoreAllMocks();
 	});
 
 	function buildFakeApp() {
-		return {
+		const authTest = vi.fn();
+		const warn = vi.fn();
+
+		const app = {
 			client: {
 				auth: {
-					test: jest.fn(),
+					test: authTest,
 				},
 			},
 			logger: {
-				warn: jest.fn(),
+				warn,
 			},
 		} as unknown as App;
+
+		return { app, authTest, warn };
 	}
 
 	it("pings immediately on start and at interval; marks connected on success", async () => {
-		const app = buildFakeApp();
+		const { app, authTest } = buildFakeApp();
 		const state: SocketState = {
 			...createInitialSocketState(),
 			consecutiveFailures: 2,
 		};
 
-		(app.client.auth.test as jest.Mock).mockResolvedValue({ ok: true });
+		authTest.mockResolvedValue({ ok: true });
 
 		const monitor = startSlackConnectionMonitor({
 			app,
@@ -53,24 +58,22 @@ describe("slack-connection-monitor", () => {
 		expect(state.connected).toBe(true);
 		expect(state.consecutiveFailures).toBe(0);
 
-		jest.advanceTimersByTime(1000);
+		await vi.advanceTimersByTimeAsync(1000);
 
-		await Promise.resolve();
-
-		expect(app.client.auth.test).toHaveBeenCalledTimes(2);
+		expect(authTest).toHaveBeenCalledTimes(2);
 
 		monitor.stop();
 	});
 
 	it("marks disconnected and logs warn on failure, including incremented failures", async () => {
-		const app = buildFakeApp();
+		const { app, authTest } = buildFakeApp();
 		const state = createInitialSocketState();
 
 		state.connected = true;
 		state.consecutiveFailures = 1;
 
 		const error = new Error("network");
-		(app.client.auth.test as jest.Mock).mockRejectedValue(error);
+		authTest.mockRejectedValue(error);
 
 		const monitor = startSlackConnectionMonitor({
 			app,
@@ -83,9 +86,7 @@ describe("slack-connection-monitor", () => {
 		expect(state.connected).toBe(false);
 		expect(state.consecutiveFailures).toBe(2);
 
-		jest.advanceTimersByTime(500);
-
-		await Promise.resolve();
+		await vi.advanceTimersByTimeAsync(500);
 
 		expect(state.consecutiveFailures).toBe(3);
 
@@ -93,9 +94,9 @@ describe("slack-connection-monitor", () => {
 	});
 
 	it("stop() clears interval and prevents further pings", async () => {
-		const app = buildFakeApp();
+		const { app, authTest } = buildFakeApp();
 		const state = createInitialSocketState();
-		(app.client.auth.test as jest.Mock).mockResolvedValue({ ok: true });
+		authTest.mockResolvedValue({ ok: true });
 
 		const monitor = startSlackConnectionMonitor({
 			app,
@@ -109,9 +110,8 @@ describe("slack-connection-monitor", () => {
 
 		monitor.stop();
 
-		jest.advanceTimersByTime(1000);
-		await Promise.resolve();
+		await vi.advanceTimersByTimeAsync(1000);
 
-		expect(app.client.auth.test).toHaveBeenCalledTimes(1);
+		expect(authTest).toHaveBeenCalledTimes(1);
 	});
 });
