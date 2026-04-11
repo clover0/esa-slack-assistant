@@ -22,15 +22,17 @@ import type {
 } from "./answer-service";
 
 const selectCategoryInstruction = ({ now }: { now: Date }) => {
-	return `あなたは esa ドキュメント検索のアシスタントです。
-ユーザーの質問と会話の文脈から関連する適切なカテゴリを特定して出力してください。
+	return `あなたは esa ドキュメント検索用のカテゴリ選定アシスタントです。
+ユーザーの発話と会話文脈をもとに、esa 上で検索すべき関連カテゴリを特定して出力してください。
 
 # 現在日時
 ${formatJP(now)}
 
 # 手順
-1. ユーザーの質問を正確に理解する
-2. esa に存在するカテゴリの中から、関連性の高いカテゴリを最大3つまで特定する
+1. ユーザーの発話の意図を理解する
+    * 発話には質問、相談、依頼、確認、報告、あいまいな問いかけが含まれる
+    * 表現そのものではなく、ユーザーが知りたいこと、探したいこと、達成したい目的を捉える
+2. カテゴリー一覧から、関連性の高いカテゴリを最大3つまで特定する
 
 # 出力ルール
 * 出力数は1〜3個まで
@@ -39,54 +41,55 @@ ${formatJP(now)}
 };
 
 const generateKeywordsInstruction = ({
-	userQuestion,
 	now,
 }: {
 	userQuestion: string;
 	now: Date;
-}) => `あなたは esa ドキュメント検索のアシスタントです。
-ユーザーの質問と会話の文脈から関連する適切なキーワードを出力してください。
+}) => `あなたは esa ドキュメント検索用のキーワード選定アシスタントです。
+ユーザーの発話と会話文脈をもとに、esa の記事検索に使うキーワードを選定してください。
 
 # 現在日時
 ${formatJP(now)}
 
-# ユーザーの質問
-\`\`\`
-${userQuestion}
-\`\`\`
-
 # 手順
-1. 会話の文脈を把握して、ユーザーの質問を正しく理解する
+1. ユーザーの発話の意図を理解する
+    * 発話には質問、相談、依頼、確認、報告、あいまいな問いかけが含まれる
+    * 表現そのものではなく、知りたいこと、探したい情報、達成したい目的を捉える
 2. 記事の検索で利用するためのキーワードを8個生成する。
+3. 会話文脈から、省略された主題、固有名詞、対象、時間軸を補う
+4. 記事検索に有効なキーワードを最大8個選ぶ
 
 # 出力ルール
+* 検索精度の向上に有効な同義語、別表記、正式名称を含めてよい
 * 1つのキーワードは2文字以上
 * 質問から類推できるキーワード、カテゴリ一覧から類推できるキーワードを使う
-* アルファベットのキーワードは、ユーザーの質問から推測できる一般的な表記（大文字・小文字を区別）で生成する。例えば github から GitHub を生成する
-`;
+* アルファベットのキーワードは、ユーザーの質問から推測できる一般的な表記（大文字・小文字を区別）で生成する。例えば github から GitHub を生成する`;
 
 const answerQuestionInstruction = ({ now }: { now: Date }) => {
-	return `あなたはナレッジシェアリングサービス「esa」の記事を利用してユーザーの質問に回答するAIアシスタントです。
-ユーザーの質問に関連するドキュメントを「ドキュメント一覧」から探し、根拠とともに回答してください。
+	return `あなたはナレッジシェアリングサービス「esa」の記事を用いて、ユーザーの発話に回答するAIアシスタントです。
+ユーザーの発話と会話文脈をもとに、「ドキュメント一覧」から関連する情報を探し、根拠を明示して回答してください。
 
 # 現在日時
 ${formatJP(now)}
 
 
 # 手順
-1. 会話の文脈を把握して、ユーザーの質問を正しく理解する
-2. 「ドキュメント一覧」から質問に関連するドキュメントを検索する
-3. ドキュメントをもとに回答を作成する
-
+1. ユーザーの発話と会話文脈を読み取り、意図を正確に把握する
+    * 発話には質問、相談、依頼、確認、報告、あいまいな問いかけを含む
+    * 表面的な表現ではなく、ユーザーが知りたいこと・確認したいこと・達成したい目的を捉える
+2. 「ドキュメント一覧」を確認し、発話に関連するドキュメントを選ぶ。複数可能。
+3. 選んだドキュメントの本文から、回答の根拠になる箇所を特定する
+4. 根拠が確認できた情報だけを使って、簡潔で分かりやすく回答する
+5. 参照したドキュメントのURLと参照箇所を示す
 
 # ルール
 
 必須制約:
 * 「ドキュメント一覧」に含まれる情報のみを使用すること
-* 一般知識や想像による補足は禁止
-* ドキュメントが見つからない場合は、ドキュメントが見つからなかった旨を伝えること
+* 一般知識、推測、想像、慣習的な補足は禁止
+* 質問の一部にしか答えられない場合は、答えられる範囲と答えられない範囲を分けて示す
 
-回答の要件:
+回答方針:
 * 回答に使用したドキュメントのURLを必ず示すこと
 * 回答の根拠として「どの部分（章・見出し・段落）」を参照したか明記すること
 * 複数のドキュメントを利用する場合は、ドキュメントごとに根拠を分けて示すこと
@@ -182,7 +185,7 @@ export class GeminiAnswerService implements AnswerService {
 				maxOutputTokens: 2048,
 				systemInstruction:
 					selectCategoryInstruction({ now: now ?? new Date() }) +
-					this.buildCategorySection(categories),
+					this.buildCategorySection({ categories, title: "カテゴリ一覧" }),
 				responseModalities: [Modality.TEXT],
 				responseMimeType: "application/json",
 				responseSchema: {
@@ -206,12 +209,16 @@ export class GeminiAnswerService implements AnswerService {
 			: [];
 	}
 
-	private buildCategorySection(categories: string[]) {
-		return `
-
-# カテゴリ一覧
-${categories.join("\n")}
-`;
+	private buildCategorySection({
+		categories,
+		title,
+		description,
+	}: {
+		categories: string[];
+		title: string;
+		description?: string;
+	}) {
+		return `\n\n# ${title}\n${description ? `${description}\n` : ""}${categories.join("\n")}`;
 	}
 
 	async generateKeywords({
@@ -221,8 +228,16 @@ ${categories.join("\n")}
 		now,
 	}: GenerateKeywordsParams) {
 		const instruction =
-			generateKeywordsInstruction({ userQuestion, now }) +
-			this.buildCategorySection(categories);
+			generateKeywordsInstruction({
+				userQuestion,
+				now,
+			}) +
+			this.buildCategorySection({
+				categories,
+				title: "参考情報",
+				description:
+					"以下は組織の esa 上のカテゴリ一覧です。検索キーワードの推定時に参考にしてください。",
+			});
 		const contents = this.buildContents(userQuestion, history);
 		const response = await this.generateContentWithRetry({
 			model: this.model,
@@ -236,7 +251,7 @@ ${categories.join("\n")}
 					type: Type.ARRAY,
 					description: "検索に使うキーワード一覧",
 					items: { type: Type.STRING },
-					minItems: "8",
+					minItems: "5",
 					maxItems: "8",
 				},
 			},
