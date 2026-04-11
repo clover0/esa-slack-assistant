@@ -1,8 +1,12 @@
-const mockGenerateContent = jest.fn();
-const mockGenerateContentStream = jest.fn();
+import { GeminiAnswerService } from "../../src/services/gemini-answer-service";
 
-jest.mock("@google/genai", () => ({
-	GoogleGenAI: jest.fn().mockImplementation(() => ({
+const { mockGenerateContent, mockGenerateContentStream } = vi.hoisted(() => ({
+	mockGenerateContent: vi.fn(),
+	mockGenerateContentStream: vi.fn(),
+}));
+
+vi.mock("@google/genai", () => ({
+	GoogleGenAI: vi.fn().mockImplementation(() => ({
 		models: {
 			generateContent: mockGenerateContent,
 			generateContentStream: mockGenerateContentStream,
@@ -18,8 +22,6 @@ jest.mock("@google/genai", () => ({
 		STRING: "STRING",
 	},
 }));
-
-import { GeminiAnswerService } from "../../src/services/gemini-answer-service";
 
 describe("GeminiAnswerService", () => {
 	beforeEach(() => {
