@@ -20,7 +20,7 @@
   "dependencies": {
     "@google/genai": "1.38.0",
     "@mastra/core": "0.24.9",
-    "@slack/bolt": "4.6.0",
+    "@slack/bolt": "4.7.2",
     "axios": "1.14.0",
     "dotenv": "17.2.3",
     "express": "5.2.1"
