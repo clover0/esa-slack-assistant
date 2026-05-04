@@ -26,7 +26,7 @@
     "express": "5.2.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.10",
+    "@biomejs/biome": "2.4.14",
     "@slack/types": "2.20.1",
     "@types/express": "5.0.6",
     "@types/node": "24.10.13",
