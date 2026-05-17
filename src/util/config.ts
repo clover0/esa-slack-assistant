@@ -9,6 +9,12 @@ export interface AppConfig {
 	slackPingIntervalMs: number;
 }
 
+export interface GoogleCloudConfig {
+	project: string;
+	location: string;
+	model: string;
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 	return {
 		logLevel: (env.LOG_LEVEL ?? "info") as LogLevel,
@@ -20,5 +26,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 			env.SLACK_PING_INTERVAL_MS || "5000",
 			10,
 		),
+	};
+}
+
+export function loadGoogleCloudConfig(
+	env: NodeJS.ProcessEnv = process.env,
+): GoogleCloudConfig {
+	return {
+		project: env.GOOGLE_CLOUD_PROJECT_ID || "",
+		location: env.GOOGLE_CLOUD_LOCATION || "global",
+		model: env.GOOGLE_GEMINI_MODEL || "gemini-3-flash-preview",
 	};
 }

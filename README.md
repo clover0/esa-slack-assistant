@@ -44,8 +44,8 @@ GOOGLE_CLOUD_PROJECT_ID= project id
 
 その他の設定（以下はデフォルト値）
 ```
-GOOGLE_CLOUD_LOCATION=us-central1
-GOOGLE_GEMINI_MODEL=gemini-2.5-flash
+GOOGLE_CLOUD_LOCATION=global
+GOOGLE_GEMINI_MODEL=gemini-3-flash-preview
 
 # error, warn, info, debug
 LOG_LEVEL=info
@@ -72,6 +72,7 @@ VertexAIのAPIキーには対応していないため、[Workload Identity Feder
 
 ### esa記事の検索・回答
 導入したSlack Appへのメンションとesaから得たい情報や質問を投稿すると、スレッドに回答が投稿されます。
+Google ADK の Function Tool 経由で esa の検索と記事取得を行う Agentic Search RAG 方式で回答します。
 
 ### Slackでのやりとりから記事を生成する
 Slackスレッド上でやりとりした内容からesa上に記事があるか確認して、なければesa上に記事をWIPで投稿します。

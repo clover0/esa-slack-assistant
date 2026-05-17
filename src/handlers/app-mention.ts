@@ -1,21 +1,13 @@
 import type { AllMiddlewareArgs, SlackEventMiddlewareArgs } from "@slack/bolt";
 import type { ChatHistory } from "../dto/chat-history";
-import type { Post } from "../dto/post";
-import type { EsaClient } from "../externals/esa/client";
-import type { AnswerService } from "../services/answer-service";
-import type { EsaService } from "../services/esa-service";
+import type { QuestionAnswerService } from "../services/answer-service";
 import { loadingMessageBlock } from "../ui/app-mention";
-import { merge } from "../util/array";
 import { formatJP } from "../util/date";
 
 type AppMention = AllMiddlewareArgs & SlackEventMiddlewareArgs<"app_mention">;
 
 export class AppMentionHandler {
-	constructor(
-		private readonly esaClient: EsaClient,
-		private readonly esaService: EsaService,
-		private readonly answerService: AnswerService,
-	) {}
+	constructor(private readonly questionAnswerService: QuestionAnswerService) {}
 
 	async handle({ context, client, event, logger }: AppMention) {
 		let totalTokenCount: number | undefined;
@@ -78,7 +70,7 @@ export class AppMentionHandler {
 		}
 	}
 
-	private async respondToNewThread({ client, event, logger }: AppMention) {
+	private async respondToNewThread({ client, event }: AppMention) {
 		const now = new Date();
 
 		const first = await client.chat.postMessage({
@@ -96,14 +88,7 @@ export class AppMentionHandler {
 		});
 
 		try {
-			const mergedPosts = await this.buildMergedPosts({
-				text: event.text,
-				logger: logger,
-				now,
-			});
-
-			const response = await this.answerService.answerQuestion({
-				posts: mergedPosts,
+			const response = await this.questionAnswerService.answerQuestion({
 				question: event.text,
 				now,
 			});
@@ -121,12 +106,7 @@ export class AppMentionHandler {
 		}
 	}
 
-	private async respondInThread({
-		client,
-		event,
-		logger,
-		context,
-	}: AppMention) {
+	private async respondInThread({ client, event, context }: AppMention) {
 		const now = new Date();
 		const first = await client.chat.postMessage({
 			channel: event.channel,
@@ -163,15 +143,7 @@ export class AppMentionHandler {
 				},
 			);
 
-			const mergedPosts = await this.buildMergedPosts({
-				text: event.text,
-				logger: logger,
-				history: replyTexts,
-				now: now,
-			});
-
-			const response = await this.answerService.answerQuestion({
-				posts: mergedPosts,
+			const response = await this.questionAnswerService.answerQuestion({
 				question: event.text,
 				history: replyTexts,
 				now,
@@ -189,57 +161,5 @@ export class AppMentionHandler {
 		} finally {
 			await streamer.stop();
 		}
-	}
-
-	private async buildMergedPosts({
-		text,
-		logger,
-		history,
-		now,
-	}: {
-		text: string;
-		logger: any;
-		history?: ChatHistory[];
-		now: Date;
-	}): Promise<Post[]> {
-		const { categories } = await this.esaClient.getCategories({});
-
-		const categoryWithCounts = categories
-			.filter((c) => !!c)
-			.map((c) => `${c.path} ${c.posts}`);
-		const categoryPathsOnly = categories.map((c) => c.path);
-		const [targetCategories, searchKeywords] = await Promise.all([
-			this.answerService.selectCategory({
-				categories: categoryWithCounts,
-				userQuestion: text,
-				history,
-				now,
-			}),
-			this.answerService.generateKeywords({
-				categories: categoryPathsOnly,
-				userQuestion: text,
-				history,
-				now,
-			}),
-		]);
-
-		logger.debug({
-			msg: "selected categories",
-			categories: targetCategories.join(","),
-		});
-		logger.debug({
-			msg: "generated keywords",
-			keywords: searchKeywords.join(","),
-		});
-
-		const [collectedPosts, searchedPosts] = await Promise.all([
-			this.esaService.collectPostsByCategories(targetCategories),
-			this.esaService.searchPostsByKeywords(searchKeywords),
-		]);
-
-		const mergedPosts = merge(collectedPosts, searchedPosts, (x) => x.number);
-		logger.info({ msg: "posts", count: mergedPosts.length });
-
-		return mergedPosts;
 	}
 }

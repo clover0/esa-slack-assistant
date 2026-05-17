@@ -1,7 +1,7 @@
 import type { AllMiddlewareArgs, SlackEventMiddlewareArgs } from "@slack/bolt";
 import type { ChatHistory } from "../dto/chat-history";
 import type { EsaClient } from "../externals/esa/client";
-import type { AnswerService } from "../services/answer-service";
+import type { ArticleService } from "../services/answer-service";
 import type { EsaService } from "../services/esa-service";
 import { merge } from "../util/array";
 import { formatJP } from "../util/date";
@@ -13,7 +13,7 @@ export class ReactionAddedHandler {
 	constructor(
 		private readonly esaClient: EsaClient,
 		private readonly esaService: EsaService,
-		private readonly answerService: AnswerService,
+		private readonly articleService: ArticleService,
 		private readonly targetReaction: string = "esa",
 	) {}
 
@@ -114,12 +114,12 @@ export class ReactionAddedHandler {
 			const categoryPathsOnly = categories.map((c) => c.path);
 
 			const [targetCategories, searchKeywords] = await Promise.all([
-				this.answerService.selectCategory({
+				this.articleService.selectCategory({
 					categories: categoryWithCounts,
 					userQuestion: conversationSummary,
 					now,
 				}),
-				this.answerService.generateKeywords({
+				this.articleService.generateKeywords({
 					categories: categoryPathsOnly,
 					userQuestion: conversationSummary,
 					now,
@@ -149,7 +149,7 @@ export class ReactionAddedHandler {
 
 			logger.info({ msg: "existing posts found", count: existingPosts.length });
 
-			const duplicateResult = await this.answerService.checkDuplicate({
+			const duplicateResult = await this.articleService.checkDuplicate({
 				posts: existingPosts,
 				conversationSummary,
 				now,
@@ -188,7 +188,7 @@ export class ReactionAddedHandler {
 			const selectedCategory =
 				targetCategories.length > 0 ? targetCategories[0] : undefined;
 
-			const generatedArticle = await this.answerService.generateArticle({
+			const generatedArticle = await this.articleService.generateArticle({
 				conversation,
 				category: selectedCategory,
 				now,

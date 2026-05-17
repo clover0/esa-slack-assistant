@@ -17,7 +17,6 @@ export type GenerateKeywordsParams = {
 };
 
 export type AnswerQuestionParams = {
-	posts: Post[];
 	question: string;
 	history?: ChatHistory[];
 	now: Date;
@@ -48,12 +47,14 @@ export type GeneratedArticle = {
 	tags: string[];
 };
 
-export interface AnswerService {
+export interface QuestionAnswerService {
+	answerQuestion(params: AnswerQuestionParams): Promise<AsyncGenerator<Chunk>>;
+}
+
+export interface ArticleService {
 	selectCategory(params: SelectCategoryParams): Promise<string[]>;
 
 	generateKeywords(params: GenerateKeywordsParams): Promise<string[]>;
-
-	answerQuestion(params: AnswerQuestionParams): Promise<AsyncGenerator<Chunk>>;
 
 	checkDuplicate(params: CheckDuplicateParams): Promise<CheckDuplicateResult>;
 
