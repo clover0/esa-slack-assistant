@@ -12,7 +12,7 @@ FROM base AS builder
 
 ENV NODE_ENV=development
 
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm config set store-dir /app/.pnpm-store \
   && pnpm install --frozen-lockfile
 
