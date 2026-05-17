@@ -247,7 +247,7 @@ export function createEsaSearchAgent(config: EsaSearchAgentConfig) {
 		name: "esa_search_agent",
 		model,
 		description: "esa 記事を検索し、根拠を引用して回答する。",
-		instruction,
+		instruction: () => instruction,
 		tools: tools.build(),
 		generateContentConfig: {
 			temperature: 0,
@@ -375,6 +375,7 @@ class EsaSearchTools {
 				returnedCount: response.posts.length,
 				totalCount: response.total_count,
 				nextPage: response.next_page,
+				sort,
 			});
 
 			return {

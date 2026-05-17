@@ -58,6 +58,12 @@ async function* events(items: unknown[]) {
 	}
 }
 
+async function getLlmAgentInstruction(callIndex = 0) {
+	const instruction = mockLlmAgent.mock.calls[callIndex][0].instruction;
+	expect(instruction).toEqual(expect.any(Function));
+	return instruction({} as never);
+}
+
 function makePost(overrides?: Partial<Post>): Post {
 	return {
 		number: 123,
@@ -168,14 +174,12 @@ describe("GeminiAnswerService", () => {
 		expect(mockLlmAgent).toHaveBeenCalledWith(
 			expect.objectContaining({
 				name: "esa_search_agent",
-				instruction: expect.stringContaining("wip フィールド"),
+				instruction: expect.any(Function),
 			}),
 		);
-		expect(mockLlmAgent).toHaveBeenCalledWith(
-			expect.objectContaining({
-				instruction: expect.stringContaining("並列"),
-			}),
-		);
+		const instruction = await getLlmAgentInstruction();
+		expect(instruction).toContain("wip フィールド");
+		expect(instruction).toContain("並列");
 	});
 
 	it("uses the fixed maxLlmCalls", async () => {
@@ -228,12 +232,8 @@ describe("GeminiAnswerService", () => {
 
 		expect(agentFactory).toHaveBeenCalledTimes(2);
 		expect(mockInMemoryRunner).toHaveBeenCalledTimes(2);
-		expect(mockLlmAgent.mock.calls[0][0].instruction).toContain(
-			"- Product/API (1 posts)",
-		);
-		expect(mockLlmAgent.mock.calls[1][0].instruction).toContain(
-			"- Sales/CRM (2 posts)",
-		);
+		expect(await getLlmAgentInstruction(0)).toContain("- Product/API (1 posts)");
+		expect(await getLlmAgentInstruction(1)).toContain("- Sales/CRM (2 posts)");
 	});
 
 	it("includes compressed esa categories in the agent instruction", async () => {
@@ -257,12 +257,32 @@ describe("GeminiAnswerService", () => {
 			now: new Date("2026-04-11T10:00:00+09:00"),
 		});
 
-		const instruction = mockLlmAgent.mock.calls[0][0].instruction;
+		const instruction = await getLlmAgentInstruction();
 		expect(instruction).toContain("# esa カテゴリ概要");
 		expect(instruction).toContain("- Product/API (120 posts)");
 		expect(instruction).toContain("- Product/App (80 posts)");
 		expect(instruction).toContain("- Sales/CRM (30 posts)");
 		expect(instruction).not.toContain("Archive/Old");
+	});
+
+	it("passes the agent instruction as a provider so category braces are not ADK state variables", async () => {
+		const esaClient = {
+			getPosts: vi.fn(),
+			getPost: vi.fn(),
+		};
+
+		const service = buildService(esaClient, {
+			categoryPromptEntries: [{ path: "Reports/{Year}", posts: 1 }],
+		});
+		mockRunEphemeral.mockReturnValue(events([]));
+
+		await service.answerQuestion({
+			question: "質問",
+			now: new Date("2026-04-11T10:00:00+09:00"),
+		});
+
+		const instruction = await getLlmAgentInstruction();
+		expect(instruction).toContain("- Reports/{Year} (1 posts)");
 	});
 
 	it("searches esa posts with default filters and explicit result count", async () => {
@@ -532,6 +552,7 @@ describe("GeminiAnswerService", () => {
 			searchTool.parameters.parse({
 				exactKeywords: ["GitHub", "Actions"],
 				perPage: 10,
+				sort: "updated-desc",
 			}),
 		);
 		await getPostTool.execute(
@@ -555,6 +576,7 @@ describe("GeminiAnswerService", () => {
 				toolName: "search_esa_posts",
 				returnedCount: 1,
 				totalCount: 1,
+				sort: "updated-desc",
 				durationMs: expect.any(Number),
 			}),
 		);
