@@ -1,3 +1,4 @@
+import { setLogger as setAdkLogger } from "@google/adk";
 import { App } from "@slack/bolt";
 import * as dotenv from "dotenv";
 import { createEsaSearchAgent } from "./agents/esa-search";
@@ -19,6 +20,7 @@ import { EsaService } from "./services/esa-service";
 import { GeminiAnswerService } from "./services/gemini-answer-service";
 import { GeminiArticleService } from "./services/gemini-article-service";
 import { startSlackConnectionMonitor } from "./services/slack-connection-monitor";
+import { AdkLoggerAdapter } from "./util/adk-logger-adapter";
 import { loadConfig, loadGoogleCloudConfig } from "./util/config";
 import { JSONConsoleLogger } from "./util/logger";
 
@@ -44,6 +46,7 @@ if (config.logFormat === "json") {
 }
 app.logger.setLevel(config.logLevel);
 app.logger.setName("esa-slack-assistant");
+setAdkLogger(new AdkLoggerAdapter(app.logger));
 
 const esaClient = new EsaClient({
 	apiKey: process.env.ESA_API_KEY || "",
