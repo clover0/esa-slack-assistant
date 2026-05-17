@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       '@google/adk':
-        specifier: ^1.1.0
+        specifier: 1.1.0
         version: 1.1.0(@grpc/grpc-js@1.14.3)(@mikro-orm/mariadb@6.6.14(@mikro-orm/core@6.6.14)(pg@8.20.0))(@mikro-orm/mssql@6.6.14(@azure/core-client@1.10.1)(@mikro-orm/core@6.6.14)(mariadb@3.4.5)(pg@8.20.0))(@mikro-orm/mysql@6.6.14(@mikro-orm/core@6.6.14)(@types/node@24.10.13)(mariadb@3.4.5)(pg@8.20.0))(@mikro-orm/postgresql@6.6.14(@mikro-orm/core@6.6.14)(mariadb@3.4.5))(@mikro-orm/sqlite@6.6.14(@mikro-orm/core@6.6.14)(mariadb@3.4.5)(pg@8.20.0))(@opentelemetry/core@2.4.0(@opentelemetry/api@1.9.0))(encoding@0.1.13)
       '@google/genai':
         specifier: 1.38.0
@@ -21,8 +21,8 @@ importers:
         specifier: 4.6.0
         version: 4.6.0(@types/express@5.0.6)
       axios:
-        specifier: 1.14.0
-        version: 1.14.0
+        specifier: 1.15.2
+        version: 1.15.2
       dotenv:
         specifier: 17.2.3
         version: 17.2.3
@@ -30,14 +30,14 @@ importers:
         specifier: 5.2.1
         version: 5.2.1
       zod:
-        specifier: ^4.4.3
+        specifier: 4.4.3
         version: 4.4.3
     devDependencies:
       '@biomejs/biome':
         specifier: 2.4.10
         version: 2.4.10
       '@google/adk-devtools':
-        specifier: ^1.1.0
+        specifier: 1.1.0
         version: 1.1.0(@azure/core-client@1.10.1)(@grpc/grpc-js@1.14.3)(@mikro-orm/core@6.6.14)(@opentelemetry/core@2.4.0(@opentelemetry/api@1.9.0))(@types/node@24.10.13)(encoding@0.1.13)(mariadb@3.4.5)(pg@8.20.0)
       '@slack/types':
         specifier: 2.20.1
@@ -1939,8 +1939,8 @@ packages:
     resolution: {integrity: sha512-NZKeq9AfyQvEeNlN0zSYAaWrmBffJh3IELMZfRpJVWgrpEbtEpnjvzqBPf+mxoI287JohRDoa+/nsfqqiZmF6g==}
     engines: {node: '>= 6.0.0'}
 
-  axios@1.14.0:
-    resolution: {integrity: sha512-3Y8yrqLSwjuzpXuZ0oIYZ/XGgLwUIBU3uLvbcpb0pidD9ctpShJd43KSlEEkVQg6DS0G9NKyzOvBfUtDKEyHvQ==}
+  axios@1.15.2:
+    resolution: {integrity: sha512-wLrXxPtcrPTsNlJmKjkPnNPK2Ihe0hn0wGSaTEiHRPxwjvJwT3hKmXF4dpqxmPO9SoNb2FsYXj/xEo0gHN+D5A==}
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
@@ -6144,7 +6144,7 @@ snapshots:
       '@slack/types': 2.20.1
       '@slack/web-api': 7.13.0
       '@types/express': 5.0.6
-      axios: 1.14.0
+      axios: 1.15.2
       express: 5.2.1
       path-to-regexp: 8.3.0
       raw-body: 3.0.2
@@ -6190,7 +6190,7 @@ snapshots:
       '@slack/types': 2.20.1
       '@types/node': 24.10.13
       '@types/retry': 0.12.0
-      axios: 1.14.0
+      axios: 1.15.2
       eventemitter3: 5.0.1
       form-data: 4.0.5
       is-electron: 2.2.2
@@ -6553,7 +6553,7 @@ snapshots:
 
   aws-ssl-profiles@1.1.2: {}
 
-  axios@1.14.0:
+  axios@1.15.2:
     dependencies:
       follow-redirects: 1.15.11
       form-data: 4.0.5
