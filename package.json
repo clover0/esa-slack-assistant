@@ -10,16 +10,12 @@
     "lint": "biome lint ./src",
     "lint-fix": "biome lint fix --write ./src",
     "format": "biome check --write ./src",
-    "test": "vitest run",
-    "mastra:dev": "mastra dev",
-    "mastra:build": "mastra build",
-    "mastra:start": "mastra start"
+    "test": "vitest run"
   },
   "author": "clover0",
   "dependencies": {
     "@google/adk": "1.1.0",
     "@google/genai": "1.38.0",
-    "@mastra/core": "0.24.9",
     "@slack/bolt": "4.6.0",
     "axios": "1.15.2",
     "dotenv": "17.2.3",
