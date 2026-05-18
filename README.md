@@ -44,8 +44,8 @@ GOOGLE_CLOUD_PROJECT_ID= project id
 
 その他の設定（以下はデフォルト値）
 ```
-GOOGLE_CLOUD_LOCATION=us-central1
-GOOGLE_GEMINI_MODEL=gemini-2.5-flash
+GOOGLE_CLOUD_LOCATION=global
+GOOGLE_GEMINI_MODEL=gemini-3-flash-preview
 
 # error, warn, info, debug
 LOG_LEVEL=info

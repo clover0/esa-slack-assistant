@@ -1,8 +1,8 @@
+import type { Mocked } from "vitest";
 import type { EsaClient } from "../../src/externals/esa/client";
 import { ReactionAddedHandler } from "../../src/handlers/reaction-added";
-import type { AnswerService } from "../../src/services/answer-service";
+import type { ArticleService } from "../../src/services/answer-service";
 import { EsaService } from "../../src/services/esa-service";
-import type { Mocked } from "vitest";
 
 describe("ReactionAddedHandler", () => {
 	const logger = {
@@ -33,10 +33,9 @@ describe("ReactionAddedHandler", () => {
 		vi.spyOn(esaService, "collectPostsByCategories").mockResolvedValue([]);
 		vi.spyOn(esaService, "searchPostsByKeywords").mockResolvedValue([]);
 
-		const answerService: Mocked<AnswerService> = {
+		const answerService: Mocked<ArticleService> = {
 			selectCategory: vi.fn().mockResolvedValue([]),
 			generateKeywords: vi.fn().mockResolvedValue([]),
-			answerQuestion: vi.fn(),
 			checkDuplicate: vi.fn().mockResolvedValue({
 				isDuplicate: false,
 				reason: "reason",

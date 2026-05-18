@@ -18,6 +18,13 @@ interface GetCategoryResponse {
 interface GetPostsParams {
 	q: string;
 	per_page?: number;
+	page?: number;
+	sort?: EsaPostSort;
+}
+
+interface GetPostParams {
+	postNumber: number;
+	include?: "comments" | "comments,comments.stargazers" | "stargazers";
 }
 
 interface CreatePostParams {
@@ -45,6 +52,22 @@ export type EsaErrorResponse = {
 };
 
 export const esaMaxPostsPerPage = 30;
+export const esaPostSortOptions = [
+	"best_match-desc",
+	"updated-desc",
+	"updated-asc",
+	"created-desc",
+	"created-asc",
+	"stars-desc",
+	"watches-desc",
+	"comments-desc",
+	"full_name-asc",
+	"name-asc",
+	"number-desc",
+	"number-asc",
+] as const;
+
+export type EsaPostSort = (typeof esaPostSortOptions)[number];
 
 export class EsaClient {
 	private readonly baseUrl: string;
@@ -105,6 +128,20 @@ export class EsaClient {
 		try {
 			const response = await this.client.get(apiPath, {
 				params: { max_per_page: esaMaxPostsPerPage, ...params },
+			});
+			return response.data;
+		} catch (err: any) {
+			console.error("esa API error:", err.response?.data || "", err.message);
+			throw err;
+		}
+	}
+
+	async getPost({ postNumber, include }: GetPostParams): Promise<Post> {
+		const apiPath = `/v1/teams/${this.team}/posts/${postNumber}`;
+
+		try {
+			const response = await this.client.get(apiPath, {
+				params: include ? { include } : undefined,
 			});
 			return response.data;
 		} catch (err: any) {

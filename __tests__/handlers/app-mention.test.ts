@@ -1,29 +1,12 @@
-import type { Post } from "../../src/dto/post";
-import type { EsaClient } from "../../src/externals/esa/client";
-import { AppMentionHandler } from "../../src/handlers/app-mention";
-import type { AnswerService } from "../../src/services/answer-service";
-import { EsaService } from "../../src/services/esa-service";
-import { loadingMessageBlock } from "../../src/ui/app-mention";
 import type { Mocked } from "vitest";
+import { AppMentionHandler } from "../../src/handlers/app-mention";
+import type { QuestionAnswerService } from "../../src/services/answer-service";
+import { loadingMessageBlock } from "../../src/ui/app-mention";
 
 async function* genChunks(parts: string[]) {
 	for (const p of parts) {
 		yield { textDelta: p } as any;
 	}
-}
-
-function makePosts(nums: number[]): Post[] {
-	return nums.map((n) => ({
-		number: n,
-		name: `name-${n}`,
-		full_name: `full-${n}`,
-		body_md: `body-${n}`,
-		category: "cat",
-		created_at: new Date().toISOString(),
-		updated_at: new Date().toISOString(),
-		url: `https://example.com/${n}`,
-		tags: [],
-	}));
 }
 
 describe("AppMentionHandler", () => {
@@ -43,56 +26,23 @@ describe("AppMentionHandler", () => {
 
 	function buildHandler(
 		mocks?: Partial<{
-			categories: { path: string; posts: number }[];
-			collected: Post[];
-			searched: Post[];
 			answerParts: string[];
+			questionAnswerService: QuestionAnswerService;
 		}>,
 	) {
-		const esaClient: Mocked<Pick<EsaClient, "getCategories">> = {
-			getCategories: vi.fn().mockResolvedValue({
-				categories: mocks?.categories ?? [
-					{ path: "Category1", posts: 10 },
-					{ path: "Category2", posts: 5 },
-				],
-			}),
-		};
-
-		const esaService = new EsaService(esaClient as any);
-		vi
-			.spyOn(esaService, "collectPostsByCategories")
-			.mockResolvedValue(mocks?.collected ?? makePosts([1, 2]));
-		vi
-			.spyOn(esaService, "searchPostsByKeywords")
-			.mockResolvedValue(mocks?.searched ?? makePosts([2, 3]));
-
-		const answerService: Mocked<AnswerService> = {
-			selectCategory: vi.fn().mockResolvedValue(["Category1"]),
-			generateKeywords: vi.fn().mockResolvedValue(["kw1", "kw2"]),
+		const questionAnswerService = (mocks?.questionAnswerService ?? {
 			answerQuestion: vi
 				.fn()
 				.mockResolvedValue(genChunks(mocks?.answerParts ?? ["A", "B"])),
-			checkDuplicate: vi.fn().mockResolvedValue({
-				isDuplicate: false,
-				reason: "reason",
-			}),
-			generateArticle: vi
-				.fn()
-				.mockResolvedValue({ title: "title", body: "body", tags: [] }),
-		};
+		}) as Mocked<QuestionAnswerService>;
 
-		const handler = new AppMentionHandler(
-			esaClient as any,
-			esaService,
-			answerService,
-		);
+		const handler = new AppMentionHandler(questionAnswerService);
 
-		return { handler, esaClient, esaService, answerService };
+		return { handler, questionAnswerService };
 	}
 
 	function buildSlackClient() {
 		const postMessage = vi.fn();
-		const update = vi.fn();
 		const replies = vi.fn();
 		const info = vi.fn();
 		const chatStreamAppend = vi.fn();
@@ -105,7 +55,6 @@ describe("AppMentionHandler", () => {
 		const client = {
 			chat: {
 				postMessage,
-				update,
 				delete: vi.fn(),
 			},
 			conversations: {
@@ -121,7 +70,6 @@ describe("AppMentionHandler", () => {
 		return {
 			client,
 			postMessage,
-			update,
 			replies,
 			info,
 			chatStreamAppend,
@@ -179,7 +127,7 @@ describe("AppMentionHandler", () => {
 	});
 
 	it("posts an error message when channel info lookup fails", async () => {
-		const { handler, answerService } = buildHandler();
+		const { handler, questionAnswerService } = buildHandler();
 		const { client, postMessage, info } = buildSlackClient();
 
 		info.mockRejectedValue(new Error("info failure"));
@@ -198,31 +146,31 @@ describe("AppMentionHandler", () => {
 				text: expect.stringContaining("エラーが発生しました。"),
 			}),
 		);
-		expect(answerService.answerQuestion).not.toHaveBeenCalled();
+		expect(questionAnswerService.answerQuestion).not.toHaveBeenCalled();
 	});
 
 	describe("when the mention starts a new thread", () => {
 		async function handleNewThread({
 			answerParts = ["foo", "bar"],
-			collected,
-			searched,
 		}: Partial<{
 			answerParts: string[];
-			collected: Post[];
-			searched: Post[];
 		}> = {}) {
-			const { handler, answerService } = buildHandler({
+			const { handler, questionAnswerService } = buildHandler({
 				answerParts,
-				collected,
-				searched,
 			});
-			const { client, postMessage, update } = buildSlackClient();
+			const { client, postMessage, chatStreamAppend, chatStreamStop } =
+				buildSlackClient();
 			postMessage.mockResolvedValue({ message: { ts: "200.200" } });
 			const event = { ...baseEvent } as any; // no thread_ts
 
 			await handler.handle({ context: {}, client, event, logger } as any);
 
-			return { postMessage, update, answerService };
+			return {
+				postMessage,
+				questionAnswerService,
+				chatStreamAppend,
+				chatStreamStop,
+			};
 		}
 
 		it("posts a loading message while searching articles", async () => {
@@ -237,31 +185,24 @@ describe("AppMentionHandler", () => {
 			);
 		});
 
-		it("merges collected and searched posts before answering", async () => {
-			const { answerService } = await handleNewThread({
-				collected: makePosts([1, 2]),
-				searched: makePosts([2, 4]),
-			});
+		it("passes the question to the answer service", async () => {
+			const { questionAnswerService } = await handleNewThread();
 
-			const params = answerService.answerQuestion.mock.calls[0][0];
-			const usedPostNumbers = params.posts
-				.map((p) => p.number)
-				.sort((a, b) => a - b);
-
-			expect(usedPostNumbers).toEqual([1, 2, 4]);
-			expect(params.question).toBe("question text");
+			expect(questionAnswerService.answerQuestion).toHaveBeenCalledWith(
+				expect.objectContaining({
+					question: "question text",
+					now: expect.any(Date),
+				}),
+			);
+			expect(
+				questionAnswerService.answerQuestion.mock.calls[0][0],
+			).not.toHaveProperty("posts");
 		});
 
 		it("streams accumulated markdown updates", async () => {
-			const { handler, answerService } = buildHandler({
+			const { chatStreamAppend, chatStreamStop } = await handleNewThread({
 				answerParts: ["foo", "bar"],
 			});
-			const { client, postMessage, chatStreamAppend, chatStreamStop } =
-				buildSlackClient();
-			postMessage.mockResolvedValue({ message: { ts: "200.200" } });
-			const event = { ...baseEvent } as any;
-
-			await handler.handle({ context: {}, client, event, logger } as any);
 
 			expect(chatStreamAppend).toHaveBeenCalledTimes(2);
 			expect(chatStreamAppend.mock.calls[0][0]).toEqual(
@@ -279,7 +220,7 @@ describe("AppMentionHandler", () => {
 	});
 
 	it("responds inside an existing thread and passes history to services", async () => {
-		const { handler, answerService } = buildHandler({
+		const { handler, questionAnswerService } = buildHandler({
 			answerParts: ["x", "y"],
 		});
 		const { client, postMessage, replies, chatStreamAppend, chatStreamStop } =
@@ -321,11 +262,9 @@ describe("AppMentionHandler", () => {
 			},
 		];
 
-		const selectCategoryParams = answerService.selectCategory.mock.calls[0][0];
-		expect(selectCategoryParams.userQuestion).toBe("question text");
-		expect(selectCategoryParams.history).toEqual(expectedHistory);
-
-		const answerQuestionParams = answerService.answerQuestion.mock.calls[0][0];
+		const answerQuestionParams =
+			questionAnswerService.answerQuestion.mock.calls[0][0];
+		expect(answerQuestionParams.question).toBe("question text");
 		expect(answerQuestionParams.history).toEqual(expectedHistory);
 
 		expect(chatStreamAppend).toHaveBeenCalledTimes(2);
@@ -339,12 +278,12 @@ describe("AppMentionHandler", () => {
 	});
 
 	it("posts an error message when an exception occurs", async () => {
-		const { handler, answerService } = buildHandler();
+		const { handler, questionAnswerService } = buildHandler();
 		const { client, postMessage, chatStreamStop } = buildSlackClient();
 
 		postMessage.mockResolvedValueOnce({ message: { ts: "400.400" } });
 
-		answerService.answerQuestion.mockRejectedValue(new Error("boom"));
+		questionAnswerService.answerQuestion.mockRejectedValue(new Error("boom"));
 
 		const event = { ...baseEvent } as any;
 
