@@ -37,8 +37,8 @@ importers:
         specifier: 1.1.0
         version: 1.1.0(@azure/core-client@1.10.1(supports-color@5.5.0))(@grpc/grpc-js@1.14.3)(@mikro-orm/core@6.6.14)(@opentelemetry/core@2.4.0(@opentelemetry/api@1.9.0))(@types/node@24.10.13)(encoding@0.1.13)(mariadb@3.4.5)(mysql2@3.20.0(@types/node@24.10.13))(pg@8.20.0)(sqlite3@5.1.7(supports-color@5.5.0))(supports-color@5.5.0)(tedious@19.2.1(@azure/core-client@1.10.1(supports-color@5.5.0))(supports-color@5.5.0))
       '@slack/types':
-        specifier: 2.20.1
-        version: 2.20.1
+        specifier: 2.22.0
+        version: 2.22.0
       '@types/express':
         specifier: 5.0.6
         version: 5.0.6
@@ -1025,8 +1025,8 @@ packages:
     resolution: {integrity: sha512-VaapvmrAifeFLAFaDPfGhEwwunTKsI6bQhYzxRXw7BSujZUae5sANO76WqlVsLXuhVtCVrBWPiS2snAQR2RHJQ==}
     engines: {node: '>= 18', npm: '>= 8.6.0'}
 
-  '@slack/types@2.20.1':
-    resolution: {integrity: sha512-eWX2mdt1ktpn8+40iiMc404uGrih+2fxiky3zBcPjtXKj6HLRdYlmhrPkJi7JTJm8dpXR6BWVWEDBXtaWMKD6A==}
+  '@slack/types@2.22.0':
+    resolution: {integrity: sha512-sZ9lIgJhPX2qft/tKWiklFlc0o1FWeI7QtciZJfW1+ErH1eGGHvOZ8e73sleTCFEFJp1q/R0WeS8Oa7AsiDprg==}
     engines: {node: '>= 12.13.0', npm: '>= 6.12.0'}
 
   '@slack/web-api@7.13.0':
@@ -4313,7 +4313,7 @@ snapshots:
       '@slack/logger': 4.0.0
       '@slack/oauth': 3.0.4(debug@4.4.3(supports-color@5.5.0))(supports-color@5.5.0)
       '@slack/socket-mode': 2.0.5(debug@4.4.3(supports-color@5.5.0))(supports-color@5.5.0)
-      '@slack/types': 2.20.1
+      '@slack/types': 2.22.0
       '@slack/web-api': 7.13.0(debug@4.4.3(supports-color@5.5.0))(supports-color@5.5.0)
       '@types/express': 5.0.6
       axios: 1.20.0(debug@4.4.3(supports-color@5.5.0))(supports-color@5.5.0)
@@ -4356,12 +4356,12 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@slack/types@2.20.1': {}
+  '@slack/types@2.22.0': {}
 
   '@slack/web-api@7.13.0(debug@4.4.3(supports-color@5.5.0))(supports-color@5.5.0)':
     dependencies:
       '@slack/logger': 4.0.0
-      '@slack/types': 2.20.1
+      '@slack/types': 2.22.0
       '@types/node': 24.10.13
       '@types/retry': 0.12.0
       axios: 1.20.0(debug@4.4.3(supports-color@5.5.0))(supports-color@5.5.0)
