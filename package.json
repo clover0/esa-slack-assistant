@@ -25,7 +25,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.10",
     "@google/adk-devtools": "1.1.0",
-    "@slack/types": "2.20.1",
+    "@slack/types": "2.22.0",
     "@types/express": "5.0.6",
     "@types/node": "24.10.13",
     "nodemon": "3.1.14",
