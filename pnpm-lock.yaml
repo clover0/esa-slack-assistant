@@ -31,8 +31,8 @@ importers:
         version: 4.4.3
     devDependencies:
       '@biomejs/biome':
-        specifier: 2.4.10
-        version: 2.4.10
+        specifier: 2.6.5
+        version: 2.6.5
       '@google/adk-devtools':
         specifier: 1.1.0
         version: 1.1.0(@azure/core-client@1.10.1(supports-color@5.5.0))(@grpc/grpc-js@1.14.3)(@mikro-orm/core@6.6.14)(@opentelemetry/core@2.4.0(@opentelemetry/api@1.9.0))(@types/node@24.10.13)(encoding@0.1.13)(mariadb@3.4.5)(mysql2@3.20.0(@types/node@24.10.13))(pg@8.20.0)(sqlite3@5.1.7(supports-color@5.5.0))(supports-color@5.5.0)(tedious@19.2.1(@azure/core-client@1.10.1(supports-color@5.5.0))(supports-color@5.5.0))
@@ -146,55 +146,71 @@ packages:
     resolution: {integrity: sha512-tmQiQ2HvtzaeLqYGy3BemiPOSGPY4wCy1IW5zDWITKSs/s35WEd7Zij/hCxvUdAOzj6U3qnyaGbYXY91ortFEQ==}
     engines: {node: '>=20'}
 
-  '@biomejs/biome@2.4.10':
-    resolution: {integrity: sha512-xxA3AphFQ1geij4JTHXv4EeSTda1IFn22ye9LdyVPoJU19fNVl0uzfEuhsfQ4Yue/0FaLs2/ccVi4UDiE7R30w==}
+  '@biomejs/biome@2.6.5':
+    resolution: {integrity: sha512-n0sp74QbSVEkWXlH659TKv4oJNylwAvDeZ8K8vt/PbcF1xneuNWe57z/G0Bxfh00cufhWXF6DiStLM8+jcLUpg==}
     engines: {node: '>=14.21.3'}
     hasBin: true
 
-  '@biomejs/cli-darwin-arm64@2.4.10':
-    resolution: {integrity: sha512-vuzzI1cWqDVzOMIkYyHbKqp+AkQq4K7k+UCXWpkYcY/HDn1UxdsbsfgtVpa40shem8Kax4TLDLlx8kMAecgqiw==}
+  '@biomejs/cli-android-arm64@2.6.5':
+    resolution: {integrity: sha512-fkLzc1WRU7wRIUNmAm7cxILb4dd6eESz/VycWvVFKVn6tXx0gFQKdUbPnwT42xys8AEvIJQpFGcK00kURwqorg==}
+    engines: {node: '>=14.21.3'}
+    cpu: [arm64]
+    os: [android]
+
+  '@biomejs/cli-android-x64@2.6.5':
+    resolution: {integrity: sha512-fkZ9dPnDAzAcaPtPCiwqtkub5C9FQK/oGCGaU9sq+DysTaq13pE9FxBIMcEZ3ydn8/FfcMdXi/DDzKDP+qyn2Q==}
+    engines: {node: '>=14.21.3'}
+    cpu: [x64]
+    os: [android]
+
+  '@biomejs/cli-darwin-arm64@2.6.5':
+    resolution: {integrity: sha512-bKd0EOREgnVjeZm4s9knQ+WdPOkWS3JHB+eWGHlx+Pq66bqQA1/KybwU0O+zuyAyXiphSCBcrLruZt3YtnJoaQ==}
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [darwin]
 
-  '@biomejs/cli-darwin-x64@2.4.10':
-    resolution: {integrity: sha512-14fzASRo+BPotwp7nWULy2W5xeUyFnTaq1V13Etrrxkrih+ez/2QfgFm5Ehtf5vSjtgx/IJycMMpn5kPd5ZNaA==}
+  '@biomejs/cli-darwin-x64@2.6.5':
+    resolution: {integrity: sha512-UkT9BECNOXSiW6SGddjyaRACy362Sc9n3vDaTFkccL0bC2gW7JzM16i4+JKPbEaDn1Sa+oETHV8KungnI/y40Q==}
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [darwin]
 
-  '@biomejs/cli-linux-arm64-musl@2.4.10':
-    resolution: {integrity: sha512-WrJY6UuiSD/Dh+nwK2qOTu8kdMDlLV3dLMmychIghHPAysWFq1/DGC1pVZx8POE3ZkzKR3PUUnVrtZfMfaJjyQ==}
+  '@biomejs/cli-linux-arm64-musl@2.6.5':
+    resolution: {integrity: sha512-kfc3AePW1a0/d/gUpcIz95nf3Ce8YY2/xL0Fk3fLqAhKsotqUi6PN6BaVWss4p6ijWbiuacZ9NQ4NiQtpjbYpw==}
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
-  '@biomejs/cli-linux-arm64@2.4.10':
-    resolution: {integrity: sha512-7MH1CMW5uuxQ/s7FLST63qF8B3Hgu2HRdZ7tA1X1+mk+St4JOuIrqdhIBnnyqeyWJNI+Bww7Es5QZ0wIc1Cmkw==}
+  '@biomejs/cli-linux-arm64@2.6.5':
+    resolution: {integrity: sha512-H9cVMWBqW/lkFK9NHJdt0bpM2q7PacUDEjQoff9+m0dCV09H/jmBykfTCkbDthHf8+jCuWDJWiQFJ7bDkiGOcA==}
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
-  '@biomejs/cli-linux-x64-musl@2.4.10':
-    resolution: {integrity: sha512-kDTi3pI6PBN6CiczsWYOyP2zk0IJI08EWEQyDMQWW221rPaaEz6FvjLhnU07KMzLv8q3qSuoB93ua6inSQ55Tw==}
+  '@biomejs/cli-linux-x64-musl@2.6.5':
+    resolution: {integrity: sha512-0mHVpLNt7/FugfZ2VPugUIEIiooWIyHGGJUqU9StxamBln9hz+maXRFIECU50jaf5/ZB93veGIViN5VKgw2AEA==}
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
-  '@biomejs/cli-linux-x64@2.4.10':
-    resolution: {integrity: sha512-tZLvEEi2u9Xu1zAqRjTcpIDGVtldigVvzug2fTuPG0ME/g8/mXpRPcNgLB22bGn6FvLJpHHnqLnwliOu8xjYrg==}
+  '@biomejs/cli-linux-x64@2.6.5':
+    resolution: {integrity: sha512-e6/WMSN/+FhH+ZOoBevps/euxFQmv6BXqYNuTn1+ITR6O4XYFjHF5PeVSNZnjkgSYmvhcDkfepSX5lXczMijGA==}
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
-  '@biomejs/cli-win32-arm64@2.4.10':
-    resolution: {integrity: sha512-umwQU6qPzH+ISTf/eHyJ/QoQnJs3V9Vpjz2OjZXe9MVBZ7prgGafMy7yYeRGnlmDAn87AKTF3Q6weLoMGpeqdQ==}
+  '@biomejs/cli-win32-arm64@2.6.5':
+    resolution: {integrity: sha512-uBbfpdR/cH5up1iRJFGAPP97xKMzrgMs685CSrY7NM+Q4Unw7chY0o3JulEvJdmU6c6hGQxwqotMq7DDH0DzxA==}
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [win32]
 
-  '@biomejs/cli-win32-x64@2.4.10':
-    resolution: {integrity: sha512-aW/JU5GuyH4uxMrNYpoC2kjaHlyJGLgIa3XkhPEZI0uKhZhJZU8BuEyJmvgzSPQNGozBwWjC972RaNdcJ9KyJg==}
+  '@biomejs/cli-win32-x64@2.6.5':
+    resolution: {integrity: sha512-07LaCeN9vvmbAAMOMsUjMfL5UbsCDkvVeyMJIgwNRc0xYqhizBGkjVzx05LYEwCXl2AiHcdzqVPR4IOYAsI1QQ==}
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [win32]
@@ -534,6 +550,7 @@ packages:
   '@google-cloud/opentelemetry-cloud-monitoring-exporter@0.21.0':
     resolution: {integrity: sha512-+lAew44pWt6rA4l8dQ1gGhH7Uo95wZKfq/GBf9aEyuNDDLQ2XppGEEReu6ujesSqTtZ8ueQFt73+7SReSHbwqg==}
     engines: {node: '>=18'}
+    deprecated: Google Cloud Platform now supports native OpenTelemetry Protocol (OTLP) endpoints via the Telemetry API. Please follow https://github.com/GoogleCloudPlatform/opentelemetry-operations-js/blob/main/MIGRATION.md
     peerDependencies:
       '@opentelemetry/api': ^1.9.0
       '@opentelemetry/core': ^2.0.0
@@ -543,6 +560,7 @@ packages:
   '@google-cloud/opentelemetry-cloud-trace-exporter@3.0.0':
     resolution: {integrity: sha512-mUfLJBFo+ESbO0dAGboErx2VyZ7rbrHcQvTP99yH/J72dGaPbH2IzS+04TFbTbEd1VW5R9uK3xq2CqawQaG+1Q==}
     engines: {node: '>=18'}
+    deprecated: Google Cloud Platform now supports native OpenTelemetry Protocol (OTLP) endpoints via the Telemetry API. Please follow https://github.com/GoogleCloudPlatform/opentelemetry-operations-js/blob/main/MIGRATION.md
     peerDependencies:
       '@opentelemetry/api': ^1.0.0
       '@opentelemetry/core': ^2.0.0
@@ -552,6 +570,7 @@ packages:
   '@google-cloud/opentelemetry-resource-util@3.0.0':
     resolution: {integrity: sha512-CGR/lNzIfTKlZoZFfS6CkVzx+nsC9gzy6S8VcyaLegfEJbiPjxbMLP7csyhJTvZe/iRRcQJxSk0q8gfrGqD3/Q==}
     engines: {node: '>=18'}
+    deprecated: Google Cloud Platform now supports native OpenTelemetry Protocol (OTLP) endpoints via the Telemetry API. Please follow https://github.com/GoogleCloudPlatform/opentelemetry-operations-js/blob/main/MIGRATION.md
     peerDependencies:
       '@opentelemetry/core': ^2.0.0
       '@opentelemetry/resources': ^2.0.0
@@ -829,18 +848,21 @@ packages:
   '@opentelemetry/sdk-trace-base@2.1.0':
     resolution: {integrity: sha512-uTX9FBlVQm4S2gVQO1sb5qyBLq/FPjbp+tmGoxu4tIgtYGmBYB44+KX/725RFDe30yBSaA9Ml9fqphe1hbUyLQ==}
     engines: {node: ^18.19.0 || >=20.6.0}
+    deprecated: Use @opentelemetry/sdk-trace package
     peerDependencies:
       '@opentelemetry/api': '>=1.3.0 <1.10.0'
 
   '@opentelemetry/sdk-trace-base@2.4.0':
     resolution: {integrity: sha512-WH0xXkz/OHORDLKqaxcUZS0X+t1s7gGlumr2ebiEgNZQl2b0upK2cdoD0tatf7l8iP74woGJ/Kmxe82jdvcWRw==}
     engines: {node: ^18.19.0 || >=20.6.0}
+    deprecated: Use @opentelemetry/sdk-trace package
     peerDependencies:
       '@opentelemetry/api': '>=1.3.0 <1.10.0'
 
   '@opentelemetry/sdk-trace-node@2.4.0':
     resolution: {integrity: sha512-MBc2l04hZPYygnWPT38UiOPy9ueutPqmJ47z0m9IKuoVQh3MblmbSgwspjhdHagZLfSfmlzhWR1xtbgVNmjX2A==}
     engines: {node: ^18.19.0 || >=20.6.0}
+    deprecated: Use @opentelemetry/sdk-trace package
     peerDependencies:
       '@opentelemetry/api': '>=1.0.0 <1.10.0'
 
@@ -3469,39 +3491,47 @@ snapshots:
       '@azure/msal-common': 16.6.1
       jsonwebtoken: 9.0.3
 
-  '@biomejs/biome@2.4.10':
+  '@biomejs/biome@2.6.5':
     optionalDependencies:
-      '@biomejs/cli-darwin-arm64': 2.4.10
-      '@biomejs/cli-darwin-x64': 2.4.10
-      '@biomejs/cli-linux-arm64': 2.4.10
-      '@biomejs/cli-linux-arm64-musl': 2.4.10
-      '@biomejs/cli-linux-x64': 2.4.10
-      '@biomejs/cli-linux-x64-musl': 2.4.10
-      '@biomejs/cli-win32-arm64': 2.4.10
-      '@biomejs/cli-win32-x64': 2.4.10
+      '@biomejs/cli-android-arm64': 2.6.5
+      '@biomejs/cli-android-x64': 2.6.5
+      '@biomejs/cli-darwin-arm64': 2.6.5
+      '@biomejs/cli-darwin-x64': 2.6.5
+      '@biomejs/cli-linux-arm64': 2.6.5
+      '@biomejs/cli-linux-arm64-musl': 2.6.5
+      '@biomejs/cli-linux-x64': 2.6.5
+      '@biomejs/cli-linux-x64-musl': 2.6.5
+      '@biomejs/cli-win32-arm64': 2.6.5
+      '@biomejs/cli-win32-x64': 2.6.5
 
-  '@biomejs/cli-darwin-arm64@2.4.10':
+  '@biomejs/cli-android-arm64@2.6.5':
     optional: true
 
-  '@biomejs/cli-darwin-x64@2.4.10':
+  '@biomejs/cli-android-x64@2.6.5':
     optional: true
 
-  '@biomejs/cli-linux-arm64-musl@2.4.10':
+  '@biomejs/cli-darwin-arm64@2.6.5':
     optional: true
 
-  '@biomejs/cli-linux-arm64@2.4.10':
+  '@biomejs/cli-darwin-x64@2.6.5':
     optional: true
 
-  '@biomejs/cli-linux-x64-musl@2.4.10':
+  '@biomejs/cli-linux-arm64-musl@2.6.5':
     optional: true
 
-  '@biomejs/cli-linux-x64@2.4.10':
+  '@biomejs/cli-linux-arm64@2.6.5':
     optional: true
 
-  '@biomejs/cli-win32-arm64@2.4.10':
+  '@biomejs/cli-linux-x64-musl@2.6.5':
     optional: true
 
-  '@biomejs/cli-win32-x64@2.4.10':
+  '@biomejs/cli-linux-x64@2.6.5':
+    optional: true
+
+  '@biomejs/cli-win32-arm64@2.6.5':
+    optional: true
+
+  '@biomejs/cli-win32-x64@2.6.5':
     optional: true
 
   '@clack/core@0.5.0':
